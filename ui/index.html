@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LegisGuard AI — 법규 영향 분석 시스템</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════
+       CSS Variables
+    ═══════════════════════════════════════ */
+    :root {
+      --bg:         #0a0c10;
+      --surface:    #111318;
+      --surface2:   #181c24;
+      --border:     #1e2330;
+      --accent:     #c9a84c;
+      --accent-dim: rgba(201,168,76,0.12);
+      --red:        #e05252;
+      --red-dim:    rgba(224,82,82,0.12);
+      --green:      #52c98a;
+      --green-dim:  rgba(82,201,138,0.12);
+      --blue:       #5291e0;
+      --blue-dim:   rgba(82,145,224,0.12);
+      --text:       #d8dce8;
+      --muted:      #4a5268;
+      --font-serif: 'Noto Serif KR', serif;
+      --font-sans:  'Noto Sans KR', sans-serif;
+      --font-mono:  'DM Mono', monospace;
+    }
+
+    /* ═══════════════════════════════════════
+       Reset & Base
+    ═══════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    ul { list-style: none; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ═══════════════════════════════════════
+       Sidebar
+    ═══════════════════════════════════════ */
+    .sidebar {
+      width: 240px;
+      min-width: 240px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo .logo-mark {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+    .sidebar-logo .logo-sub {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 3px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .nav-section {
+      padding: 16px 12px 4px;
+    }
+    .nav-section-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 8px;
+      margin-bottom: 6px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 400;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .nav-item:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .nav-item.active {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+    .nav-item .nav-icon {
+      width: 16px;
+      height: 16px;
+      opacity: 0.7;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .nav-item.active .nav-icon { opacity: 1; }
+    .nav-badge {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 20px;
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(224,82,82,0.25);
+    }
+    .nav-badge.blue {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border-color: rgba(82,145,224,0.25);
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .status-label { font-family: var(--font-mono); font-size: 11px; }
+    .status-time {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ═══════════════════════════════════════
+       Main Layout
+    ═══════════════════════════════════════ */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Topbar */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 28px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+    .topbar-title {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .topbar-search {
+      flex: 1;
+      max-width: 360px;
+      position: relative;
+      margin-left: 16px;
+    }
+    .topbar-search input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 7px 12px 7px 34px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .topbar-search input:focus { border-color: var(--accent); }
+    .topbar-search input::placeholder { color: var(--muted); }
+    .topbar-search .search-icon {
+      position: absolute;
+      left: 10px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .topbar-date {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .topbar-btn {
+      background: var(--accent);
+      color: #0a0c10;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .topbar-btn:hover { opacity: 0.85; }
+
+    /* Content */
+    .content {
+      padding: 28px;
+      flex: 1;
+    }
+
+    /* ═══════════════════════════════════════
+       Section / Page Handling
+    ═══════════════════════════════════════ */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ═══════════════════════════════════════
+       Cards
+    ═══════════════════════════════════════ */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .card:hover { border-color: var(--accent); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card-top-bar {
+      height: 2px;
+      background: var(--accent);
+    }
+    .card-top-bar.red   { background: var(--red); }
+    .card-top-bar.blue  { background: var(--blue); }
+    .card-top-bar.green { background: var(--green); }
+    .card-header {
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-title {
+      font-family: var(--font-serif);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .card-body { padding: 16px 20px; }
+
+    /* ═══════════════════════════════════════
+       Badges
+    ═══════════════════════════════════════ */
+    .badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .badge-red    { background: var(--red-dim); color: var(--red); border: 1px solid rgba(224,82,82,0.22); }
+    .badge-gold   { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(201,168,76,0.22); }
+    .badge-blue   { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(82,145,224,0.22); }
+    .badge-green  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(82,201,138,0.22); }
+    .badge-gray   { background: rgba(74,82,104,0.15); color: var(--muted); border: 1px solid rgba(74,82,104,0.3); }
+
+    /* Status tags */
+    .status-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 9px;
+      border-radius: 4px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .st-notice  { border: 1px solid var(--blue); color: var(--blue); background: rgba(82,145,224,0.07); }
+    .st-review  { border: 1px solid var(--accent); color: var(--accent); background: rgba(201,168,76,0.07); }
+    .st-passed  { border: 1px solid var(--green); color: var(--green); background: rgba(82,201,138,0.07); }
+    .st-enacted { border: 1px solid var(--muted); color: var(--muted); background: rgba(74,82,104,0.07); }
+    .st-urgent  { border: 1px solid var(--red); color: var(--red); background: rgba(224,82,82,0.07); }
+
+    /* ═══════════════════════════════════════
+       Stat Row
+    ═══════════════════════════════════════ */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      transition: border-color 0.2s;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-card:nth-child(1) { animation-delay: 0.05s; }
+    .stat-card:nth-child(2) { animation-delay: 0.10s; }
+    .stat-card:nth-child(3) { animation-delay: 0.15s; }
+    .stat-card:nth-child(4) { animation-delay: 0.20s; }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .stat-value {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-value .unit { font-size: 12px; color: var(--muted); margin-left: 4px; }
+    .stat-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .stat-sub .up { color: var(--red); }
+    .stat-sub .dn { color: var(--green); }
+
+    /* ═══════════════════════════════════════
+       Two-Column Layout
+    ═══════════════════════════════════════ */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* ═══════════════════════════════════════
+       Table
+    ═══════════════════════════════════════ */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr { transition: background 0.15s; cursor: pointer; }
+    .data-table tbody tr:hover { background: var(--surface2); }
+    .law-name { font-weight: 500; margin-bottom: 2px; }
+    .law-meta { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+    .risk-bar-wrap { display: flex; align-items: center; gap: 8px; }
+    .risk-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .risk-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+    .risk-fill.high { background: var(--red); }
+    .risk-fill.mid  { background: var(--accent); }
+    .risk-fill.low  { background: var(--green); }
+
+    /* ═══════════════════════════════════════
+       Filter Row
+    ═══════════════════════════════════════ */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .filter-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-right: 4px;
+    }
+
+    /* ═══════════════════════════════════════
+       Timeline / Activity
+    ═══════════════════════════════════════ */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .tl-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-item:hover { background: rgba(255,255,255,0.01); }
+    .tl-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .tl-dot.red { background: var(--red); }
+    .tl-dot.gold { background: var(--accent); }
+    .tl-dot.blue { background: var(--blue); }
+    .tl-dot.green { background: var(--green); }
+    .tl-dot.gray { background: var(--muted); }
+    .tl-body { flex: 1; min-width: 0; }
+    .tl-title { font-size: 12.5px; font-weight: 500; margin-bottom: 2px; }
+    .tl-sub { font-size: 11px; color: var(--muted); }
+    .tl-time {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+      padding-top: 3px;
+    }
+
+    /* ═══════════════════════════════════════
+       Agent Status Panel
+    ═══════════════════════════════════════ */
+    .agent-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .agent-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      transition: border-color 0.2s;
+    }
+    .agent-card:hover { border-color: var(--accent); }
+    .agent-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .agent-icon { font-size: 14px; }
+    .agent-name { font-size: 12px; font-weight: 500; }
+    .agent-role { font-size: 10px; color: var(--muted); margin-bottom: 8px; font-family: var(--font-mono); }
+    .agent-status-line { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+    .agent-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .agent-dot.idle    { background: var(--muted); }
+    .agent-dot.running { background: var(--blue); animation: pulse-dot 1.5s infinite; }
+    .agent-dot.done    { background: var(--green); }
+
+    /* ═══════════════════════════════════════
+       Upload / Input Panel
+    ═══════════════════════════════════════ */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 32px;
+      text-align: center;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+    .upload-zone:hover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .upload-icon { font-size: 28px; margin-bottom: 10px; opacity: 0.6; }
+    .upload-title { font-family: var(--font-serif); font-size: 14px; margin-bottom: 4px; }
+    .upload-sub { font-size: 11px; color: var(--muted); }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .form-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: var(--muted); }
+    select.form-input { cursor: pointer; }
+    textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.5; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0a0c10;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      border: none;
+      width: 100%;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      padding: 9px 18px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: 1px solid var(--border);
+      width: 100%;
+      margin-top: 8px;
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ═══════════════════════════════════════
+       Diff View
+    ═══════════════════════════════════════ */
+    .diff-block {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .diff-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .diff-article {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .diff-line {
+      padding: 6px 14px;
+      line-height: 1.7;
+    }
+    .diff-line.del { background: rgba(224,82,82,0.08); color: var(--red); border-left: 2px solid var(--red); }
+    .diff-line.add { background: rgba(82,201,138,0.08); color: var(--green); border-left: 2px solid var(--green); }
+    .diff-line.ctx { color: var(--muted); }
+    .diff-line .prefix { opacity: 0.6; margin-right: 6px; }
+
+    /* ═══════════════════════════════════════
+       Risk Summary
+    ═══════════════════════════════════════ */
+    .risk-summary {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .risk-box {
+      flex: 1;
+      border-radius: 8px;
+      padding: 14px 16px;
+      border: 1px solid;
+    }
+    .risk-box.high { border-color: rgba(224,82,82,0.3); background: rgba(224,82,82,0.05); }
+    .risk-box.mid  { border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.05); }
+    .risk-box.low  { border-color: rgba(82,201,138,0.3); background: rgba(82,201,138,0.05); }
+    .risk-box-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
+    .risk-box-count { font-family: var(--font-mono); font-size: 22px; font-weight: 500; }
+    .risk-box.high .risk-box-count { color: var(--red); }
+    .risk-box.mid  .risk-box-count { color: var(--accent); }
+    .risk-box.low  .risk-box-count { color: var(--green); }
+
+    /* ═══════════════════════════════════════
+       Action Item List
+    ═══════════════════════════════════════ */
+    .action-list { display: flex; flex-direction: column; gap: 8px; }
+    .action-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: border-color 0.2s;
+      cursor: pointer;
+    }
+    .action-item:hover { border-color: var(--accent); }
+    .action-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      padding-top: 2px;
+      min-width: 20px;
+    }
+    .action-body { flex: 1; }
+    .action-title { font-size: 12.5px; font-weight: 500; margin-bottom: 3px; }
+    .action-desc { font-size: 11px; color: var(--muted); }
+    .action-meta { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+    .action-priority {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 3px;
+    }
+    .priority-high { background: var(--red-dim); color: var(--red); }
+    .priority-mid  { background: var(--accent-dim); color: var(--accent); }
+    .priority-low  { background: var(--green-dim); color: var(--green); }
+    .action-term {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* ═══════════════════════════════════════
+       Org Profile
+    ═══════════════════════════════════════ */
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .profile-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 10px 14px;
+    }
+    .profile-key {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .profile-val { font-size: 12.5px; font-weight: 500; }
+
+    /* ═══════════════════════════════════════
+       Section Title
+    ═══════════════════════════════════════ */
+    .section-title {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ═══════════════════════════════════════
+       Empty / Placeholder
+    ═══════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-state .empty-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.4; }
+    .empty-state p { font-size: 12px; }
+
+    /* ═══════════════════════════════════════
+       Delay animation helpers
+    ═══════════════════════════════════════ */
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.10s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.20s; }
+
+    /* ═══════════════════════════════════════
+       Report View
+    ═══════════════════════════════════════ */
+    .report-meta-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .report-meta-key {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .report-meta-val {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text);
+      margin-left: 4px;
+    }
+    .report-meta-sep { color: var(--border); }
+
+    .one-line-summary {
+      background: var(--accent-dim);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      font-family: var(--font-serif);
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">⚖ LegisGuard AI</div>
+    <div class="logo-sub">법규 영향 분석 시스템 v1.0</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">주요 기능</div>
+    <ul>
+      <li class="nav-item active" data-page="dashboard" onclick="navigate(this)">
+        <span class="nav-icon">◈</span> 대시보드
+      </li>
+      <li class="nav-item" data-page="analyze" onclick="navigate(this)">
+        <span class="nav-icon">▶</span> 입법예고 분석
+        <span class="nav-badge">NEW</span>
+      </li>
+      <li class="nav-item" data-page="results" onclick="navigate(this)">
+        <span class="nav-icon">◉</span> 분석 결과
+        <span class="nav-badge blue">3</span>
+      </li>
+      <li class="nav-item" data-page="legisdb" onclick="navigate(this)">
+        <span class="nav-icon">◧</span> 법령 DB
+      </li>
+    </ul>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-label">조직 관리</div>
+    <ul>
+      <li class="nav-item" data-page="org" onclick="navigate(this)">
+        <span class="nav-icon">◫</span> 조직 프로파일
+      </li>
+      <li class="nav-item" data-page="agents" onclick="navigate(this)">
+        <span class="nav-icon">⬡</span> 에이전트 현황
+      </li>
+    </ul>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="status-row">
+      <div class="status-dot"></div>
+      <span class="status-label">법제처 API 연결 중</span>
+      <span class="status-time">실시간</span>
+    </div>
+    <div class="status-row" style="margin-top:8px;">
+      <div class="status-dot" style="background:var(--blue);animation-delay:0.6s;"></div>
+      <span class="status-label">Vector DB 동기화</span>
+      <span class="status-time">5분 전</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════════════════
+     MAIN
+════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <span class="topbar-title" id="topbar-title">대시보드</span>
+    <div class="topbar-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" placeholder="법령명, 조문번호, 키워드 검색..." />
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="topbar-date"></span>
+      <button class="topbar-btn" onclick="navigate(document.querySelector('[data-page=analyze]'))">+ 새 분석 시작</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══════════════════════════════
+         PAGE: 대시보드
+    ══════════════════════════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="section-title">모니터링 현황</div>
+
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">이번 달 입법예고</div>
+          <div class="stat-value">24<span class="unit">건</span></div>
+          <div class="stat-sub"><span class="up">▲ 6건</span> 전월 대비</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">영향 분석 완료</div>
+          <div class="stat-value">18<span class="unit">건</span></div>
+          <div class="stat-sub" style="color:var(--green);">정확도 96.2%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">긴급 대응 필요</div>
+          <div class="stat-value" style="color:var(--red);">3<span class="unit">건</span></div>
+          <div class="stat-sub"><span class="up">즉시 조치 필요</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">평균 분석 소요</div>
+          <div class="stat-value">3.8<span class="unit">분</span></div>
+          <div class="stat-sub"><span class="dn">목표 5분 이내 달성</span></div>
+        </div>
+      </div>
+
+      <!-- Main grid -->
+      <div class="grid-3">
+        <!-- Recent legislation -->
+        <div class="card" style="animation-delay:0.05s;">
+          <div class="card-top-bar blue"></div>
+          <div class="card-header">
+            <span class="card-title">최근 입법예고</span>
+            <div class="filter-row" style="margin:0;gap:6px;">
+              <button class="filter-btn active" onclick="toggleFilter(this)">전체</button>
+              <button class="filter-btn" onclick="toggleFilter(this)">안전보건</button>
+              <button class="filter-btn" onclick="toggleFilter(this)">환경</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>법령명</th>
+                  <th>유형</th>
+                  <th>상태</th>
+                  <th>리스크</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onclick="navigate(document.querySelector('[data-page=results]'))">
+                  <td>
+                    <div class="law-name">산업안전보건법 시행규칙</div>
+                    <div class="law-meta">고용부 | 예고기간 2025.03.10~04.01</div>
+                  </td>
+                  <td><span class="badge badge-gold">일부개정</span></td>
+                  <td><span class="status-tag st-notice">예고</span></td>
+                  <td>
+                    <div class="risk-bar-wrap">
+                      <div class="risk-bar"><div class="risk-fill high" style="width:88%"></div></div>
+                      <span class="badge badge-red">HIGH</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr onclick="navigate(document.querySelector('[data-page=results]'))">
+                  <td>
+                    <div class="law-name">화학물질관리법 시행령</div>
+                    <div class="law-meta">환경부 | 예고기간 2025.03.05~03.26</div>
+                  </td>
+                  <td><span class="badge badge-blue">전부개정</span></td>
+                  <td><span class="status-tag st-review">심사</span></td>
+                  <td>
+                    <div class="risk-bar-wrap">
+                      <div class="risk-bar"><div class="risk-fill mid" style="width:65%"></div></div>
+                      <span class="badge badge-gold">MED</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="law-name">중대재해 처벌 등에 관한 법률</div>
+                    <div class="law-meta">법무부 | 예고기간 2025.02.20~03.13</div>
+                  </td>
+                  <td><span class="badge badge-red">신설조문</span></td>
+                  <td><span class="status-tag st-urgent">긴급</span></td>
+                  <td>
+                    <div class="risk-bar-wrap">
+                      <div class="risk-bar"><div class="risk-fill high" style="width:95%"></div></div>
+                      <span class="badge badge-red">CRIT</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="law-name">실내공기질 관리법 시행규칙</div>
+                    <div class="law-meta">환경부 | 예고기간 2025.02.15~03.07</div>
+                  </td>
+                  <td><span class="badge badge-gold">일부개정</span></td>
+                  <td><span class="status-tag st-passed">통과</span></td>
+                  <td>
+                    <div class="risk-bar-wrap">
+                      <div class="risk-bar"><div class="risk-fill low" style="width:32%"></div></div>
+                      <span class="badge badge-green">LOW</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="law-name">폐기물관리법 시행규칙</div>
+                    <div class="law-meta">환경부 | 예고기간 2025.01.30~02.20</div>
+                  </td>
+                  <td><span class="badge badge-gray">타법개정</span></td>
+                  <td><span class="status-tag st-enacted">공포</span></td>
+                  <td>
+                    <div class="risk-bar-wrap">
+                      <div class="risk-bar"><div class="risk-fill low" style="width:20%"></div></div>
+                      <span class="badge badge-green">LOW</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="card" style="animation-delay:0.10s;">
+          <div class="card-top-bar"></div>
+          <div class="card-header">
+            <span class="card-title">최근 분석 활동</span>
+          </div>
+          <div class="card-body" style="padding-top:4px;">
+            <div class="timeline">
+              <div class="tl-item">
+                <div class="tl-dot red"></div>
+                <div class="tl-body">
+                  <div class="tl-title">중대재해처벌법 — 분석 완료</div>
+                  <div class="tl-sub">조문 7건 변경 감지 / 리스크 CRITICAL</div>
+                </div>
+                <div class="tl-time">14:32</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot blue"></div>
+                <div class="tl-body">
+                  <div class="tl-title">산업안전보건법 — 조문 매칭 완료</div>
+                  <div class="tl-sub">제23조 제2항 외 4건</div>
+                </div>
+                <div class="tl-time">13:10</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot gold"></div>
+                <div class="tl-body">
+                  <div class="tl-title">액션 아이템 3건 생성</div>
+                  <div class="tl-sub">화학물질관리법 — 점검 주기 변경 외</div>
+                </div>
+                <div class="tl-time">11:55</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot green"></div>
+                <div class="tl-body">
+                  <div class="tl-title">법령 DB 동기화 완료</div>
+                  <div class="tl-sub">법제처 API — 12건 갱신</div>
+                </div>
+                <div class="tl-time">09:01</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot gray"></div>
+                <div class="tl-body">
+                  <div class="tl-title">폐기물관리법 — 모니터링 전환</div>
+                  <div class="tl-sub">조직 영향 낮음 판단</div>
+                </div>
+                <div class="tl-time">어제</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Summary Row -->
+      <div class="section-title">리스크 현황</div>
+      <div class="risk-summary">
+        <div class="risk-box high">
+          <div class="risk-box-label">즉시 대응 필요</div>
+          <div class="risk-box-count">3</div>
+        </div>
+        <div class="risk-box mid">
+          <div class="risk-box-label">모니터링 필요</div>
+          <div class="risk-box-count">9</div>
+        </div>
+        <div class="risk-box low">
+          <div class="risk-box-label">영향 없음</div>
+          <div class="risk-box-count">12</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PAGE: 입법예고 분석
+    ══════════════════════════════ -->
+    <div class="page" id="page-analyze">
+      <div class="section-title">입법예고 분석 시작</div>
+      <div class="grid-2">
+        <div>
+          <div class="card" style="animation-delay:0.05s;">
+            <div class="card-top-bar"></div>
+            <div class="card-header">
+              <span class="card-title">입법예고 문서 입력</span>
+            </div>
+            <div class="card-body">
+
+              <div class="upload-zone" onclick="alert('파일 업로드 — service/parseDocument() 호출 예정')">
+                <div class="upload-icon">📄</div>
+                <div class="upload-title">PDF / TXT / JSON 파일 업로드</div>
+                <div class="upload-sub">드래그 앤 드롭 또는 클릭하여 선택</div>
+                <div class="upload-sub" style="margin-top:6px;">
+                  <span class="badge badge-gray">PDF</span>
+                  <span class="badge badge-gray" style="margin-left:4px;">TXT</span>
+                  <span class="badge badge-gray" style="margin-left:4px;">JSON</span>
+                </div>
+              </div>
+
+              <div style="text-align:center;color:var(--muted);font-size:11px;margin-bottom:14px;">또는 직접 입력</div>
+
+              <div class="form-group">
+                <label class="form-label">법령명</label>
+                <input class="form-input" type="text" placeholder="예: 산업안전보건법 시행규칙" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">개정 유형</label>
+                <select class="form-input">
+                  <option value="">자동 감지 (권장)</option>
+                  <option>일부개정</option>
+                  <option>전부개정</option>
+                  <option>신설</option>
+                  <option>타법개정</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">입법예고 원문 텍스트</label>
+                <textarea class="form-input" placeholder="입법예고 원문을 붙여넣기 하세요..."></textarea>
+              </div>
+              <button class="btn-primary" onclick="startAnalysis()">▶ 분석 시작</button>
+              <button class="btn-secondary" onclick="alert('샘플 데이터 로드 — service/loadSampleData() 호출 예정')">샘플 데이터로 테스트</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card" style="animation-delay:0.10s;">
+            <div class="card-top-bar blue"></div>
+            <div class="card-header">
+              <span class="card-title">분석 대상 조직 프로파일</span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">사업장 유형</label>
+                <select class="form-input">
+                  <option>제조업 (50인 이상)</option>
+                  <option>건설업</option>
+                  <option>화학물질 취급사업장</option>
+                  <option>서비스업</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">위험물 취급 여부</label>
+                <select class="form-input">
+                  <option>해당 없음</option>
+                  <option>고압가스 취급</option>
+                  <option>유해화학물질 취급</option>
+                  <option>폭발물 취급</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">현행 점검 주기</label>
+                <select class="form-input">
+                  <option>연 1회</option>
+                  <option>반기 1회</option>
+                  <option>분기 1회</option>
+                  <option>월 1회</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">분석 관점</label>
+                <select class="form-input">
+                  <option>전체 (안전·보건·환경 통합)</option>
+                  <option>안전보건팀</option>
+                  <option>환경안전(EHS)</option>
+                  <option>법무팀</option>
+                  <option>경영진 요약</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="animation-delay:0.15s;">
+            <div class="card-top-bar"></div>
+            <div class="card-header">
+              <span class="card-title">분석 파이프라인</span>
+            </div>
+            <div class="card-body">
+              <div class="agent-grid">
+                <div class="agent-card">
+                  <div class="agent-header">
+                    <div class="agent-icon">🔍</div>
+                    <div class="agent-name">Orchestrator</div>
+                  </div>
+                  <div class="agent-role">유형 분류 / 전략 결정</div>
+                  <div class="agent-status-line">
+                    <div class="agent-dot idle"></div>
+                    <span style="color:var(--muted);font-size:11px;">대기 중</span>
+                  </div>
+                </div>
+                <div class="agent-card">
+                  <div class="agent-header">
+                    <div class="agent-icon">⚖</div>
+                    <div class="agent-name">Change Analyst</div>
+                  </div>
+                  <div class="agent-role">조문 단위 Diff 분석</div>
+                  <div class="agent-status-line">
+                    <div class="agent-dot idle"></div>
+                    <span style="color:var(--muted);font-size:11px;">대기 중</span>
+                  </div>
+                </div>
+                <div class="agent-card">
+                  <div class="agent-header">
+                    <div class="agent-icon">⚠</div>
+                    <div class="agent-name">Risk Analyst</div>
+                  </div>
+                  <div class="agent-role">법적 책임 관점 분석</div>
+                  <div class="agent-status-line">
+                    <div class="agent-dot idle"></div>
+                    <span style="color:var(--muted);font-size:11px;">대기 중</span>
+                  </div>
+                </div>
+                <div class="agent-card">
+                  <div class="agent-header">
+                    <div class="agent-icon">🏛</div>
+                    <div class="agent-name">Control Auditor</div>
+                  </div>
+                  <div class="agent-role">내부통제 Gap 분석</div>
+                  <div class="agent-status-line">
+                    <div class="agent-dot idle"></div>
+                    <span style="color:var(--muted);font-size:11px;">대기 중</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PAGE: 분석 결과
+    ══════════════════════════════ -->
+    <div class="page" id="page-results">
+      <div class="section-title">분석 결과 — 산업안전보건법 시행규칙 일부개정</div>
+
+      <!-- Report Meta -->
+      <div class="report-meta-row">
+        <span class="report-meta-key">법령명</span>
+        <span class="report-meta-val">산업안전보건법 시행규칙</span>
+        <span class="report-meta-sep">|</span>
+        <span class="report-meta-key">유형</span>
+        <span class="badge badge-gold">일부개정</span>
+        <span class="report-meta-sep">|</span>
+        <span class="report-meta-key">분석일시</span>
+        <span class="report-meta-val" style="font-family:var(--font-mono);">2025.03.10 14:32</span>
+        <span class="report-meta-sep">|</span>
+        <span class="badge badge-red">RISK: HIGH</span>
+        <span class="badge badge-blue" style="margin-left:4px;">즉시 대응 필요</span>
+      </div>
+
+      <!-- One-line Summary -->
+      <div class="one-line-summary">
+        📌 안전보건관리책임자 교육 주기가 2년에서 1년으로 단축되어, 현행 교육 체계 전면 재검토 및 예산 재편성이 즉시 필요합니다.
+      </div>
+
+      <div class="grid-2" style="margin-bottom:24px;">
+
+        <!-- Diff View -->
+        <div class="card" style="animation-delay:0.05s;">
+          <div class="card-top-bar red"></div>
+          <div class="card-header">
+            <span class="card-title">조문 단위 Diff 분석</span>
+            <span class="badge badge-red">변경 7건</span>
+          </div>
+          <div class="card-body" style="padding:12px;">
+
+            <div class="diff-block">
+              <div class="diff-header">
+                <span class="diff-article">제23조 제2항 — 안전보건관리책임자 교육</span>
+                <span class="badge badge-red">강화</span>
+              </div>
+              <div class="diff-line del"><span class="prefix">−</span>제23조 제2항: 안전보건관리책임자는 <strong>2년마다</strong> 1회 이상 고용노동부장관이 정하는 교육을 받아야 한다.</div>
+              <div class="diff-line add"><span class="prefix">+</span>제23조 제2항: 안전보건관리책임자는 <strong>1년마다</strong> 1회 이상 고용노동부장관이 정하는 교육을 받아야 한다.</div>
+              <div class="diff-line ctx"><span class="prefix"> </span>변경 탐지: 빈도 증가 (2년 → 1년) / 변경 유형: 의무 강화</div>
+            </div>
+
+            <div class="diff-block">
+              <div class="diff-header">
+                <span class="diff-article">제47조 — 작업환경 측정 주기</span>
+                <span class="badge badge-gold">변경</span>
+              </div>
+              <div class="diff-line del"><span class="prefix">−</span>측정 주기: 해당 작업장의 유해인자 발생 정도에 따라 <strong>6개월에 1회</strong> 이상 실시.</div>
+              <div class="diff-line add"><span class="prefix">+</span>측정 주기: 해당 작업장의 유해인자 발생 정도에 따라 <strong>3개월에 1회</strong> 이상 실시.</div>
+              <div class="diff-line ctx"><span class="prefix"> </span>변경 탐지: 빈도 증가 (6개월 → 3개월) / 변경 유형: 의무 강화</div>
+            </div>
+
+            <div class="diff-block">
+              <div class="diff-header">
+                <span class="diff-article">제79조의2 (신설) — 화학물질 노출 기준 초과 시 보고</span>
+                <span class="badge badge-blue">신설</span>
+              </div>
+              <div class="diff-line add"><span class="prefix">+</span>제79조의2 (신설): 사업주는 작업환경 측정 결과 노출 기준을 초과한 경우 <strong>48시간 이내</strong>에 관할 노동청에 보고하여야 한다.</div>
+              <div class="diff-line ctx"><span class="prefix"> </span>신설 의무: 노출 기준 초과 시 보고 의무 (48시간 이내)</div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Action Items -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card" style="animation-delay:0.10s;">
+            <div class="card-top-bar"></div>
+            <div class="card-header">
+              <span class="card-title">조직 Gap 분석</span>
+            </div>
+            <div class="card-body">
+              <div class="profile-grid">
+                <div class="profile-item">
+                  <div class="profile-key">현행 교육 주기</div>
+                  <div class="profile-val" style="color:var(--red);">2년 1회</div>
+                </div>
+                <div class="profile-item">
+                  <div class="profile-key">개정 요구 주기</div>
+                  <div class="profile-val" style="color:var(--accent);">1년 1회</div>
+                </div>
+                <div class="profile-item">
+                  <div class="profile-key">현행 측정 주기</div>
+                  <div class="profile-val" style="color:var(--red);">6개월 1회</div>
+                </div>
+                <div class="profile-item">
+                  <div class="profile-key">개정 요구 주기</div>
+                  <div class="profile-val" style="color:var(--accent);">3개월 1회</div>
+                </div>
+                <div class="profile-item" style="grid-column:span 2;">
+                  <div class="profile-key">신설 의무 충족 여부</div>
+                  <div class="profile-val" style="color:var(--red);">미충족 — 보고 체계 없음</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="animation-delay:0.15s;">
+            <div class="card-top-bar"></div>
+            <div class="card-header">
+              <span class="card-title">Action Strategist 제안</span>
+              <span class="badge badge-blue">3건</span>
+            </div>
+            <div class="card-body" style="padding:12px;">
+              <div class="action-list">
+                <div class="action-item">
+                  <div class="action-num">01</div>
+                  <div class="action-body">
+                    <div class="action-title">안전보건관리책임자 교육 일정 즉시 재편성</div>
+                    <div class="action-desc">현행 2년 → 1년 주기 전환. 연간 교육 계획 수립 및 교육 예산 재산정.</div>
+                    <div class="action-meta">
+                      <span class="action-priority priority-high">HIGH</span>
+                      <span class="action-term">단기 (1개월 이내)</span>
+                      <span class="badge badge-gray">안전보건팀</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="action-item">
+                  <div class="action-num">02</div>
+                  <div class="action-body">
+                    <div class="action-title">작업환경 측정 주기 변경 및 측정 업체 계약 수정</div>
+                    <div class="action-desc">6개월 → 3개월 주기. 측정 업체 계약 조건 변경 및 추가 예산 확보 필요.</div>
+                    <div class="action-meta">
+                      <span class="action-priority priority-high">HIGH</span>
+                      <span class="action-term">단기 (2개월 이내)</span>
+                      <span class="badge badge-gray">EHS팀</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="action-item">
+                  <div class="action-num">03</div>
+                  <div class="action-body">
+                    <div class="action-title">노출 기준 초과 보고 절차 신설 (제79조의2)</div>
+                    <div class="action-desc">48시간 이내 관할 노동청 보고 프로세스 수립. 내부 보고 양식 및 담당자 지정.</div>
+                    <div class="action-meta">
+                      <span class="action-priority priority-mid">MED</span>
+                      <span class="action-term">중기 (3개월 이내)</span>
+                      <span class="badge badge-gray">법무팀</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PAGE: 법령 DB
+    ══════════════════════════════ -->
+    <div class="page" id="page-legisdb">
+      <div class="section-title">법령 구조 DB</div>
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="stat-card" style="animation-delay:0.05s;">
+          <div class="stat-label">수록 법령 수</div>
+          <div class="stat-value">1,284<span class="unit">건</span></div>
+          <div class="stat-sub">법제처 API 기반 / 최신 시행 기준</div>
+        </div>
+        <div class="stat-card" style="animation-delay:0.10s;">
+          <div class="stat-label">Vector DB 조문 수</div>
+          <div class="stat-value">48,203<span class="unit">건</span></div>
+          <div class="stat-sub">최종 동기화 2025.03.10 09:01</div>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay:0.15s;">
+        <div class="card-top-bar blue"></div>
+        <div class="card-header">
+          <span class="card-title">법령 목록</span>
+          <div class="filter-row" style="margin:0;gap:6px;">
+            <button class="filter-btn active" onclick="toggleFilter(this)">전체</button>
+            <button class="filter-btn" onclick="toggleFilter(this)">안전보건</button>
+            <button class="filter-btn" onclick="toggleFilter(this)">환경</button>
+            <button class="filter-btn" onclick="toggleFilter(this)">화학물질</button>
+            <button class="filter-btn" onclick="toggleFilter(this)">폐기물</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>법령명</th>
+                <th>소관부처</th>
+                <th>조문 수</th>
+                <th>시행일</th>
+                <th>상태</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="law-name">산업안전보건법</div><div class="law-meta">법률 제18426호</div></td>
+                <td><span class="badge badge-gray">고용노동부</span></td>
+                <td><span class="law-meta" style="font-family:var(--font-mono);">175 조</span></td>
+                <td><span class="law-meta">2024.01.01</span></td>
+                <td><span class="status-tag st-passed">시행</span></td>
+              </tr>
+              <tr>
+                <td><div class="law-name">산업안전보건법 시행령</div><div class="law-meta">대통령령 제33795호</div></td>
+                <td><span class="badge badge-gray">고용노동부</span></td>
+                <td><span class="law-meta" style="font-family:var(--font-mono);">98 조</span></td>
+                <td><span class="law-meta">2024.01.01</span></td>
+                <td><span class="status-tag st-passed">시행</span></td>
+              </tr>
+              <tr>
+                <td><div class="law-name">중대재해 처벌 등에 관한 법률</div><div class="law-meta">법률 제17907호</div></td>
+                <td><span class="badge badge-gray">고용노동부</span></td>
+                <td><span class="law-meta" style="font-family:var(--font-mono);">16 조</span></td>
+                <td><span class="law-meta">2022.01.27</span></td>
+                <td><span class="status-tag st-urgent">개정 예고</span></td>
+              </tr>
+              <tr>
+                <td><div class="law-name">화학물질관리법</div><div class="law-meta">법률 제18936호</div></td>
+                <td><span class="badge badge-gray">환경부</span></td>
+                <td><span class="law-meta" style="font-family:var(--font-mono);">62 조</span></td>
+                <td><span class="law-meta">2022.06.10</span></td>
+                <td><span class="status-tag st-review">심사 중</span></td>
+              </tr>
+              <tr>
+                <td><div class="law-name">폐기물관리법</div><div class="law-meta">법률 제18693호</div></td>
+                <td><span class="badge badge-gray">환경부</span></td>
+                <td><span class="law-meta" style="font-family:var(--font-mono);">82 조</span></td>
+                <td><span class="law-meta">2022.04.14</span></td>
+                <td><span class="status-tag st-enacted">공포</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PAGE: 조직 프로파일
+    ══════════════════════════════ -->
+    <div class="page" id="page-org">
+      <div class="section-title">조직 프로파일 설정</div>
+      <div class="grid-2">
+        <div class="card" style="animation-delay:0.05s;">
+          <div class="card-top-bar"></div>
+          <div class="card-header">
+            <span class="card-title">사업장 기본 정보</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">조직명</label>
+              <input class="form-input" type="text" placeholder="예: ○○ 주식회사" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">사업장 유형</label>
+              <select class="form-input">
+                <option>제조업 (50인 이상)</option>
+                <option>건설업</option>
+                <option>화학물질 취급사업장</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">위험물 취급 여부</label>
+              <select class="form-input">
+                <option>해당 없음</option>
+                <option>고압가스 취급</option>
+                <option>유해화학물질 취급</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">설비 유형</label>
+              <input class="form-input" type="text" placeholder="예: 프레스, 크레인, 보일러 등" />
+            </div>
+            <button class="btn-primary" onclick="alert('조직 프로파일 저장 — service/saveOrgProfile() 호출 예정')">저장</button>
+          </div>
+        </div>
+
+        <div class="card" style="animation-delay:0.10s;">
+          <div class="card-top-bar blue"></div>
+          <div class="card-header">
+            <span class="card-title">내부 통제 현황</span>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">안전보건 교육 주기</label>
+              <select class="form-input">
+                <option>연 1회</option>
+                <option>반기 1회</option>
+                <option>분기 1회</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">작업환경 측정 주기</label>
+              <select class="form-input">
+                <option>연 1회</option>
+                <option>반기 1회</option>
+                <option>분기 1회</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">보건관리자 선임 여부</label>
+              <select class="form-input">
+                <option>선임 (전담)</option>
+                <option>선임 (비전담)</option>
+                <option>위탁</option>
+                <option>미선임</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">MSDS 관리 체계</label>
+              <select class="form-input">
+                <option>전산화 관리</option>
+                <option>수기 관리</option>
+                <option>미관리</option>
+              </select>
+            </div>
+            <button class="btn-primary" onclick="alert('내부 통제 현황 저장 — service/saveControlProfile() 호출 예정')">저장</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         PAGE: 에이전트 현황
+    ══════════════════════════════ -->
+    <div class="page" id="page-agents">
+      <div class="section-title">멀티 에이전트 현황</div>
+      <div class="grid-2">
+        <div class="card" style="animation-delay:0.05s;">
+          <div class="card-top-bar"></div>
+          <div class="card-header">
+            <span class="card-title">에이전트 파이프라인</span>
+          </div>
+          <div class="card-body">
+            <div class="agent-grid">
+              <div class="agent-card">
+                <div class="agent-header">
+                  <div class="agent-icon">🔍</div>
+                  <div class="agent-name">Orchestrator</div>
+                </div>
+                <div class="agent-role">유형 분류 / 전략 결정 / 결과 종합</div>
+                <div class="agent-status-line">
+                  <div class="agent-dot idle"></div>
+                  <span style="color:var(--muted);font-size:11px;">대기 중 — 마지막 실행 14:32</span>
+                </div>
+              </div>
+              <div class="agent-card">
+                <div class="agent-header">
+                  <div class="agent-icon">⚖</div>
+                  <div class="agent-name">Change Analyst</div>
+                </div>
+                <div class="agent-role">조문 단위 Diff · 구조 분석</div>
+                <div class="agent-status-line">
+                  <div class="agent-dot done"></div>
+                  <span style="color:var(--green);font-size:11px;">완료 — 7건 변경 탐지</span>
+                </div>
+              </div>
+              <div class="agent-card">
+                <div class="agent-header">
+                  <div class="agent-icon">⚠</div>
+                  <div class="agent-name">Risk Analyst</div>
+                </div>
+                <div class="agent-role">법적 책임 · 리스크 등급 산정</div>
+                <div class="agent-status-line">
+                  <div class="agent-dot done"></div>
+                  <span style="color:var(--green);font-size:11px;">완료 — RISK: HIGH</span>
+                </div>
+              </div>
+              <div class="agent-card">
+                <div class="agent-header">
+                  <div class="agent-icon">🏛</div>
+                  <div class="agent-name">Control Auditor</div>
+                </div>
+                <div class="agent-role">내부통제 Gap 분석</div>
+                <div class="agent-status-line">
+                  <div class="agent-dot done"></div>
+                  <span style="color:var(--green);font-size:11px;">완료 — Gap 3건 발견</span>
+                </div>
+              </div>
+              <div class="agent-card" style="grid-column:span 2;">
+                <div class="agent-header">
+                  <div class="agent-icon">🎯</div>
+                  <div class="agent-name">Action Strategist</div>
+                </div>
+                <div class="agent-role">실행 과제 도출 · 우선순위 산정 · 비용 추정</div>
+                <div class="agent-status-line">
+                  <div class="agent-dot done"></div>
+                  <span style="color:var(--green);font-size:11px;">완료 — 액션 3건 생성</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="animation-delay:0.10s;">
+          <div class="card-top-bar blue"></div>
+          <div class="card-header">
+            <span class="card-title">최근 실행 로그</span>
+          </div>
+          <div class="card-body" style="padding-top:4px;">
+            <div class="timeline">
+              <div class="tl-item">
+                <div class="tl-dot green"></div>
+                <div class="tl-body">
+                  <div class="tl-title">Action Strategist — 완료</div>
+                  <div class="tl-sub">액션 3건 생성 / 소요 0.8s</div>
+                </div>
+                <div class="tl-time">14:32:51</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot green"></div>
+                <div class="tl-body">
+                  <div class="tl-title">Control Auditor — 완료</div>
+                  <div class="tl-sub">Gap 3건 발견 / 소요 1.2s</div>
+                </div>
+                <div class="tl-time">14:32:43</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot green"></div>
+                <div class="tl-body">
+                  <div class="tl-title">Risk Analyst — 완료</div>
+                  <div class="tl-sub">RISK HIGH 판정 / 소요 0.9s</div>
+                </div>
+                <div class="tl-time">14:32:40</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot green"></div>
+                <div class="tl-body">
+                  <div class="tl-title">Change Analyst — 완료</div>
+                  <div class="tl-sub">조문 7건 변경 탐지 / 소요 1.5s</div>
+                </div>
+                <div class="tl-time">14:32:35</div>
+              </div>
+              <div class="tl-item">
+                <div class="tl-dot blue"></div>
+                <div class="tl-body">
+                  <div class="tl-title">Orchestrator — 전략 결정</div>
+                  <div class="tl-sub">DIFF Strategy 선택 / 소요 0.3s</div>
+                </div>
+                <div class="tl-time">14:32:32</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  /* ─────────────────────────────────
+     날짜 표시
+  ───────────────────────────────── */
+  (function() {
+    const d = new Date();
+    const days = ['일','월','화','수','목','금','토'];
+    const str = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} (${days[d.getDay()]})`;
+    document.getElementById('topbar-date').textContent = str;
+  })();
+
+  /* ─────────────────────────────────
+     Navigation
+  ───────────────────────────────── */
+  const PAGE_TITLES = {
+    dashboard: '대시보드',
+    analyze:   '입법예고 분석',
+    results:   '분석 결과',
+    legisdb:   '법령 DB',
+    org:       '조직 프로파일',
+    agents:    '에이전트 현황',
+  };
+
+  function navigate(el) {
+    const pageKey = el.dataset.page;
+
+    // Nav active state
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.querySelectorAll(`[data-page="${pageKey}"]`).forEach(n => n.classList.add('active'));
+
+    // Show page
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + pageKey).classList.add('active');
+
+    // Update topbar title
+    document.getElementById('topbar-title').textContent = PAGE_TITLES[pageKey] || '';
+
+    // Re-trigger animations
+    document.querySelectorAll(`#page-${pageKey} .card, #page-${pageKey} .stat-card`).forEach((c, i) => {
+      c.style.animation = 'none';
+      void c.offsetWidth;
+      c.style.animation = '';
+      c.style.animationDelay = (i * 0.05 + 0.05) + 's';
+    });
+  }
+
+  /* ─────────────────────────────────
+     Filter toggle
+  ───────────────────────────────── */
+  function toggleFilter(btn) {
+    // Deactivate siblings
+    const siblings = btn.closest('.filter-row').querySelectorAll('.filter-btn');
+    siblings.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    // TODO: service/filterLegislation(btn.textContent) 호출 예정
+  }
+
+  /* ─────────────────────────────────
+     분석 시작 — Agent 상태 애니메이션 (Mock)
+     실제 구현 시: service/startAnalysis(formData) 호출 후
+     각 에이전트 결과 수신 시 상태 업데이트
+  ───────────────────────────────── */
+  function startAnalysis() {
+    const dots = document.querySelectorAll('#page-analyze .agent-dot');
+    const labels = document.querySelectorAll('#page-analyze .agent-status-line span');
+
+    // Reset
+    dots.forEach(d => { d.className = 'agent-dot idle'; });
+    labels.forEach(l => { l.style.color = 'var(--muted)'; l.textContent = '대기 중'; });
+
+    const steps = [
+      { label: 'Orchestrator 실행 중...', color: 'var(--blue)', dotClass: 'running' },
+      { label: 'Change Analyst 분석 중...', color: 'var(--blue)', dotClass: 'running' },
+      { label: 'Change Analyst 완료', color: 'var(--green)', dotClass: 'done' },
+      { label: 'Risk / Control 병렬 분석 중...', color: 'var(--blue)', dotClass: 'running' },
+      { label: '분석 완료 — 결과 보기', color: 'var(--green)', dotClass: 'done' },
+    ];
+
+    let i = 0;
+    const targets = [0, 1, 1, 2, 3];
+    function step() {
+      if (i >= steps.length) {
+        navigate(document.querySelector('[data-page=results]'));
+        return;
+      }
+      const idx = targets[i];
+      dots[idx].className = 'agent-dot ' + steps[i].dotClass;
+      labels[idx].style.color = steps[i].color;
+      labels[idx].textContent = steps[i].label;
+      i++;
+      setTimeout(step, 700);
+    }
+    step();
+  }
+</script>
+</body>
+</html>
