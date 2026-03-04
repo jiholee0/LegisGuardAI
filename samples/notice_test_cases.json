@@ -1,0 +1,168 @@
+{
+  "candidate_articles": [
+    {
+      "law_name": "산업안전보건법",
+      "article_no": "제14조",
+      "article_key": "산업안전보건법:제14조",
+      "article_title": "이사회 보고 및 승인 등",
+      "why_good_for_testing": "숫자나 빈도를 바꾸기 쉬운 문장이 있고, 법령명과 조문번호가 명확하다.",
+      "basis_excerpt": "매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다."
+    },
+    {
+      "law_name": "산업안전보건법",
+      "article_no": "제29조",
+      "article_key": "산업안전보건법:제29조",
+      "article_title": "근로자에 대한 안전보건교육",
+      "why_good_for_testing": "핵심 키워드가 짧고 분명해서 검색 적합성을 보기 쉽다.",
+      "basis_excerpt": "사업주는 소속 근로자에게 고용노동부령으로 정하는 바에 따라 정기적으로 안전보건교육을 하여야 한다."
+    },
+    {
+      "law_name": "산업안전보건법",
+      "article_no": "제54조",
+      "article_key": "산업안전보건법:제54조",
+      "article_title": "중대재해 발생 시 사업주의 조치",
+      "why_good_for_testing": "보고 의무와 즉시 조치 의무가 같이 있어 문구 변경 더미를 만들기 쉽다.",
+      "basis_excerpt": "사업주는 중대재해가 발생한 사실을 알게 된 경우에는 고용노동부령으로 정하는 바에 따라 지체 없이 고용노동부장관에게 보고하여야 한다."
+    },
+    {
+      "law_name": "산업안전보건법 시행규칙",
+      "article_no": "제29조",
+      "article_key": "산업안전보건법 시행규칙:제29조",
+      "article_title": "안전보건관리책임자 등에 대한 직무교육",
+      "why_good_for_testing": "기간과 주기 문구가 구체적이라 검색 결과의 품질을 판단하기 쉽다.",
+      "basis_excerpt": "선임되거나 채용된 후 3개월 이내에 직무를 수행하는 데 필요한 신규교육을 받아야 하며, 신규교육을 이수한 후 매 2년이 되는 날을 기준으로 전후 6개월 사이에 ... 보수교육을 받아야 한다."
+    },
+    {
+      "law_name": "산업안전보건법 시행규칙",
+      "article_no": "제41조",
+      "article_key": "산업안전보건법 시행규칙:제41조",
+      "article_title": "고객의 폭언등으로 인한 건강장해 예방조치",
+      "why_good_for_testing": "매뉴얼 마련, 교육 실시 등 키워드가 선명하고 항목형 구조라 검색 검증에 적합하다.",
+      "basis_excerpt": "고객과의 문제 상황 발생 시 대처방법 등을 포함하는 고객응대업무 매뉴얼 마련"
+    },
+    {
+      "law_name": "산업안전보건법 시행령",
+      "article_no": "제8조의2",
+      "article_key": "산업안전보건법 시행령:제8조의2",
+      "article_title": "협조 요청 대상 정보 또는 자료",
+      "why_good_for_testing": "구체적인 정보 명칭이 있어 시행령 검색과 법률 검색을 구분해 보기 좋다.",
+      "basis_excerpt": "사업장별 계약전력 정보"
+    }
+  ],
+  "test_cases": [
+    {
+      "case_id": "law_article_14_plan_frequency",
+      "description": "이사회 보고 계획의 빈도 문구를 바꾼 일부개정안 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제14조 제1항 \"매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법",
+        "article_no": "제14조",
+        "article_key": "산업안전보건법:제14조"
+      },
+      "basis_excerpt": "매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다."
+    },
+    {
+      "case_id": "law_article_29_regular_training",
+      "description": "정기 안전보건교육 문구를 강화한 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제29조 제1항 \"정기적으로 안전보건교육을 하여야 한다\"를 \"분기마다 안전보건교육을 하여야 한다\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법",
+        "article_no": "제29조",
+        "article_key": "산업안전보건법:제29조"
+      },
+      "basis_excerpt": "정기적으로 안전보건교육을 하여야 한다."
+    },
+    {
+      "case_id": "law_article_54_report_timing",
+      "description": "중대재해 보고 시점을 구체화한 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제54조 제2항 \"지체 없이 고용노동부장관에게 보고하여야 한다\"를 \"24시간 이내에 고용노동부장관에게 보고하여야 한다\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법",
+        "article_no": "제54조",
+        "article_key": "산업안전보건법:제54조"
+      },
+      "basis_excerpt": "지체 없이 고용노동부장관에게 보고하여야 한다."
+    },
+    {
+      "case_id": "rule_article_29_job_training_period",
+      "description": "직무교육 신규교육 기한을 변경한 시행규칙 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행규칙 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행규칙",
+          "content": "제29조 제1항 \"선임되거나 채용된 후 3개월 이내에 직무를 수행하는 데 필요한 신규교육을 받아야\"를 \"선임되거나 채용된 후 1개월 이내에 직무를 수행하는 데 필요한 신규교육을 받아야\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법 시행규칙",
+        "article_no": "제29조",
+        "article_key": "산업안전보건법 시행규칙:제29조"
+      },
+      "basis_excerpt": "선임되거나 채용된 후 3개월 이내에 직무를 수행하는 데 필요한 신규교육을 받아야"
+    },
+    {
+      "case_id": "rule_article_41_manual_and_training",
+      "description": "고객응대업무 매뉴얼과 예방교육 문구를 손본 시행규칙 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행규칙 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행규칙",
+          "content": "제41조 제2호의 고객응대업무 매뉴얼 마련 의무에 더하여 정기 점검 절차를 포함하도록 하고, 제3호의 건강장해 예방 관련 교육을 반기마다 실시하도록 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법 시행규칙",
+        "article_no": "제41조",
+        "article_key": "산업안전보건법 시행규칙:제41조"
+      },
+      "basis_excerpt": "고객응대업무 매뉴얼 마련 / 건강장해 예방 관련 교육 실시"
+    },
+    {
+      "case_id": "decree_article_8_2_contract_power_info",
+      "description": "협조 요청 대상 정보의 범위를 조정하는 시행령 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행령 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행령",
+          "content": "제8조의2 제1호의 사업장별 계약전력 정보에 최근 3년간 변동 이력을 포함하도록 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법 시행령",
+        "article_no": "제8조의2",
+        "article_key": "산업안전보건법 시행령:제8조의2"
+      },
+      "basis_excerpt": "사업장별 계약전력 정보"
+    }
+  ]
+}

@@ -708,6 +708,7 @@
     .action-body { flex: 1; }
     .action-title { font-size: 12.5px; font-weight: 500; margin-bottom: 3px; }
     .action-desc { font-size: 11px; color: var(--muted); }
+    .law-article-text { white-space: pre-wrap; }
     .action-meta { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
     .action-priority {
       font-family: var(--font-mono);
@@ -1420,13 +1421,13 @@
       <div class="grid-2" style="margin-bottom:16px;">
         <div class="stat-card" style="animation-delay:0.05s;">
           <div class="stat-label">수록 법령 수</div>
-          <div class="stat-value">1,284<span class="unit">건</span></div>
+          <div class="stat-value" id="law-db-total-laws">-<span class="unit">건</span></div>
           <div class="stat-sub">법제처 API 기반 / 최신 시행 기준</div>
         </div>
         <div class="stat-card" style="animation-delay:0.10s;">
-          <div class="stat-label">Vector DB 조문 수</div>
-          <div class="stat-value">48,203<span class="unit">건</span></div>
-          <div class="stat-sub">최종 동기화 2025.03.10 09:01</div>
+          <div class="stat-label">RDB 조문 수</div>
+          <div class="stat-value" id="law-db-total-articles">-<span class="unit">건</span></div>
+          <div class="stat-sub">articles 테이블 기준</div>
         </div>
       </div>
 
@@ -1434,63 +1435,42 @@
         <div class="card-top-bar blue"></div>
         <div class="card-header">
           <span class="card-title">법령 목록</span>
-          <div class="filter-row" style="margin:0;gap:6px;">
-            <button class="filter-btn active" onclick="toggleFilter(this)">전체</button>
-            <button class="filter-btn" onclick="toggleFilter(this)">안전보건</button>
-            <button class="filter-btn" onclick="toggleFilter(this)">환경</button>
-            <button class="filter-btn" onclick="toggleFilter(this)">화학물질</button>
-            <button class="filter-btn" onclick="toggleFilter(this)">폐기물</button>
-          </div>
         </div>
         <div class="card-body" style="padding:0;">
           <table class="data-table">
             <thead>
               <tr>
                 <th>법령명</th>
-                <th>소관부처</th>
+                <th>법령 구분</th>
                 <th>조문 수</th>
                 <th>시행일</th>
                 <th>상태</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="law-db-table-body">
               <tr>
-                <td><div class="law-name">산업안전보건법</div><div class="law-meta">법률 제18426호</div></td>
-                <td><span class="badge badge-gray">고용노동부</span></td>
-                <td><span class="law-meta" style="font-family:var(--font-mono);">175 조</span></td>
-                <td><span class="law-meta">2024.01.01</span></td>
-                <td><span class="status-tag st-passed">시행</span></td>
-              </tr>
-              <tr>
-                <td><div class="law-name">산업안전보건법 시행령</div><div class="law-meta">대통령령 제33795호</div></td>
-                <td><span class="badge badge-gray">고용노동부</span></td>
-                <td><span class="law-meta" style="font-family:var(--font-mono);">98 조</span></td>
-                <td><span class="law-meta">2024.01.01</span></td>
-                <td><span class="status-tag st-passed">시행</span></td>
-              </tr>
-              <tr>
-                <td><div class="law-name">중대재해 처벌 등에 관한 법률</div><div class="law-meta">법률 제17907호</div></td>
-                <td><span class="badge badge-gray">고용노동부</span></td>
-                <td><span class="law-meta" style="font-family:var(--font-mono);">16 조</span></td>
-                <td><span class="law-meta">2022.01.27</span></td>
-                <td><span class="status-tag st-urgent">개정 예고</span></td>
-              </tr>
-              <tr>
-                <td><div class="law-name">화학물질관리법</div><div class="law-meta">법률 제18936호</div></td>
-                <td><span class="badge badge-gray">환경부</span></td>
-                <td><span class="law-meta" style="font-family:var(--font-mono);">62 조</span></td>
-                <td><span class="law-meta">2022.06.10</span></td>
-                <td><span class="status-tag st-review">심사 중</span></td>
-              </tr>
-              <tr>
-                <td><div class="law-name">폐기물관리법</div><div class="law-meta">법률 제18693호</div></td>
-                <td><span class="badge badge-gray">환경부</span></td>
-                <td><span class="law-meta" style="font-family:var(--font-mono);">82 조</span></td>
-                <td><span class="law-meta">2022.04.14</span></td>
-                <td><span class="status-tag st-enacted">공포</span></td>
+                <td colspan="5">
+                  <div class="empty-state">
+                    <div class="empty-icon">◧</div>
+                    <p>법령 DB 데이터를 불러오는 중입니다.</p>
+                  </div>
+                </td>
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div class="card" style="animation-delay:0.20s; margin-top:16px;">
+        <div class="card-top-bar"></div>
+        <div class="card-header">
+          <span class="card-title" id="law-db-detail-title">조문 상세</span>
+        </div>
+        <div class="card-body" id="law-db-detail-body">
+          <div class="empty-state">
+            <div class="empty-icon">▤</div>
+            <p>법령 목록에서 항목을 선택하면 조문 상세가 표시됩니다.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -1803,6 +1783,186 @@
     }
     step();
   }
+
+  /* ─────────────────────────────────
+     법령 DB 탭 로드
+  ───────────────────────────────── */
+  async function loadLawDbPage() {
+    const totalLawsEl = document.getElementById('law-db-total-laws');
+    const totalArticlesEl = document.getElementById('law-db-total-articles');
+    const tableBodyEl = document.getElementById('law-db-table-body');
+
+    try {
+      const payload = await fetchLawDbPayload();
+      totalLawsEl.innerHTML = `${formatNumber(payload.total_laws)}<span class="unit">건</span>`;
+      totalArticlesEl.innerHTML = `${formatNumber(payload.total_articles)}<span class="unit">건</span>`;
+
+      if (!payload.laws.length) {
+        tableBodyEl.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <div class="empty-icon">◧</div>
+                <p>적재된 법령 데이터가 없습니다.</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tableBodyEl.innerHTML = payload.laws.map((law) => `
+        <tr onclick="selectLaw(${law.law_id}, '${escapeJs(law.law_name)}')">
+          <td>
+            <div class="law-name">${escapeHtml(law.law_name)}</div>
+            <div class="law-meta">${escapeHtml(formatPromulgationNo(law.promulgation_no))}</div>
+          </td>
+          <td><span class="badge badge-gray">${escapeHtml(formatLawType(law.law_type))}</span></td>
+          <td><span class="law-meta" style="font-family:var(--font-mono);">${formatNumber(law.article_count)} 조</span></td>
+          <td><span class="law-meta">${escapeHtml(formatDate(law.effective_date))}</span></td>
+          <td><span class="status-tag ${law.is_current ? 'st-passed' : 'st-review'}">${law.is_current ? '시행' : '비현행'}</span></td>
+        </tr>
+      `).join('');
+
+      if (payload.laws.length) {
+        await selectLaw(payload.laws[0].law_id, payload.laws[0].law_name);
+      }
+    } catch (error) {
+      totalLawsEl.innerHTML = `-<span class="unit">건</span>`;
+      totalArticlesEl.innerHTML = `-<span class="unit">건</span>`;
+      tableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="5">
+            <div class="empty-state">
+              <div class="empty-icon">⚠</div>
+              <p>법령 DB 데이터를 불러오지 못했습니다.</p>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  async function fetchLawDbPayload() {
+    const candidates = ['/law/db', 'http://127.0.0.1:8000/law/db'];
+    let lastError = null;
+
+    for (const url of candidates) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError || new Error('Failed to load law DB payload');
+  }
+
+  async function selectLaw(lawId, lawName) {
+    const detailTitleEl = document.getElementById('law-db-detail-title');
+    const detailBodyEl = document.getElementById('law-db-detail-body');
+    detailTitleEl.textContent = `${lawName} 조문 상세`;
+    detailBodyEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">▤</div>
+        <p>조문 데이터를 불러오는 중입니다.</p>
+      </div>
+    `;
+
+    try {
+      const payload = await fetchLawArticlesPayload(lawId);
+      if (!payload.articles.length) {
+        detailBodyEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">▤</div>
+            <p>표시할 조문이 없습니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      detailBodyEl.innerHTML = payload.articles.map((article) => `
+        <div class="action-item" style="cursor:default; margin-bottom:8px;">
+          <div class="action-num">${escapeHtml(article.article_no)}</div>
+          <div class="action-body">
+            <div class="action-title">${escapeHtml(article.article_title || '-')}</div>
+            <div class="action-desc law-article-text">${escapeHtml(article.article_text)}</div>
+          </div>
+        </div>
+      `).join('');
+    } catch (error) {
+      detailBodyEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⚠</div>
+          <p>조문 상세를 불러오지 못했습니다.</p>
+        </div>
+      `;
+    }
+  }
+
+  async function fetchLawArticlesPayload(lawId) {
+    const candidates = [`/law/${lawId}/articles`, `http://127.0.0.1:8000/law/${lawId}/articles`];
+    let lastError = null;
+
+    for (const url of candidates) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError || new Error('Failed to load law article payload');
+  }
+
+  function formatNumber(value) {
+    return Number(value || 0).toLocaleString('ko-KR');
+  }
+
+  function formatDate(value) {
+    if (!value) return '-';
+    return value.replaceAll('-', '.');
+  }
+
+  function formatPromulgationNo(value) {
+    return value ? `공포번호 ${value}` : '-';
+  }
+
+  function formatLawType(value) {
+    const map = {
+      LAW: '법률',
+      ENFORCEMENT_DECREE: '시행령',
+      ENFORCEMENT_RULE: '시행규칙',
+    };
+    return map[value] || value || '-';
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function escapeJs(value) {
+    return String(value ?? '')
+      .replaceAll('\\', '\\\\')
+      .replaceAll("'", "\\'");
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadLawDbPage();
+  });
 </script>
 </body>
 </html>

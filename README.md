@@ -1,0 +1,79 @@
+# LegisGuard AI PoC
+
+로컬에서 아래 흐름을 검증하는 최소 PoC입니다.
+
+1. 법제처 Open API로 산업안전보건법 계열 현행 법령 수집
+2. SQLite에 조문 저장
+3. 조문을 Chroma에 인덱싱
+4. 입법예고안 텍스트/JSON 입력으로 관련 현행 조문 검색
+
+## Stack
+
+- FastAPI
+- SQLAlchemy + SQLite
+- Chroma
+- 기본 임베딩: deterministic hash embedding
+- 선택 임베딩: `sentence-transformers` + `BAAI/bge-m3`
+
+`EMBEDDING_PROVIDER=hash`가 기본값입니다. 로컬 모델을 쓰려면 optional dependency를 설치하고 `sentence_transformers`로 바꾸면 됩니다.
+
+## Setup
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env
+```
+
+로컬 모델 임베딩을 쓰려면:
+
+```bash
+pip install -e ".[dev,local-embeddings]"
+```
+
+## Run
+
+```bash
+uvicorn app.main:app --reload
+```
+
+## API
+
+### 1. 법령 수집
+
+```bash
+curl -X POST http://127.0.0.1:8000/admin/ingest/laws \
+  -H "Content-Type: application/json" \
+  -d @samples/ingest_request.json
+```
+
+### 2. 벡터 인덱스 생성
+
+```bash
+curl -X POST http://127.0.0.1:8000/admin/reindex \
+  -H "Content-Type: application/json" \
+  -d @samples/reindex_request.json
+```
+
+### 3. 입법예고 검색
+
+```bash
+curl -X POST http://127.0.0.1:8000/search/notice \
+  -H "Content-Type: application/json" \
+  -d @samples/search_text_request.json
+```
+
+## 데이터 위치
+
+- SQLite: `data/sqlite/legisguard.db`
+- Chroma: `data/chroma/`
+- 원본 캐시: `data/raw/`
+
+## 제한 사항
+
+- 현행법만 저장하고 과거 버전은 저장하지 않습니다.
+- 입법예고 자동 수집은 없습니다.
+- diff 생성, 리스크 분석, 액션 제안은 포함하지 않습니다.
+- 기본 타깃은 산업안전보건법, 시행령, 시행규칙 3종입니다.
+- MOLEG Open API 응답 구조가 다를 수 있어 실제 운영 전 API 키로 검증이 필요합니다.
