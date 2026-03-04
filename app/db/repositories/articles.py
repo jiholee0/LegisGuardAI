@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy.orm import Session
 
 from app.db.models import Article, Law
 
@@ -28,7 +27,8 @@ class ArticleRepository:
         return list(self.session.scalars(select(Article).order_by(Article.article_order, Article.id)))
 
     def get_by_id(self, article_id: int) -> Article | None:
-        return self.session.get(Article, article_id)
+        stmt = select(Article).options(joinedload(Article.law)).where(Article.id == article_id)
+        return self.session.scalar(stmt)
 
     def list_by_law_name_and_article_no(self, law_name: str, article_no: str) -> list[Article]:
         stmt = (

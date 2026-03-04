@@ -1,0 +1,102 @@
+{
+  "test_suite": "조문 신설 테스트 케이스",
+  "change_kind": "조문 신설",
+  "test_cases": [
+    {
+      "case_id": "law_article_29_2_new_training_record",
+      "description": "조문 신설: 안전보건교육 결과 기록 보존 의무를 신설하는 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제29조의2를 다음과 같이 신설한다. 제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
+        },
+        "top_k": 5
+      },
+      "expected_change_type": "제정",
+      "expected_target": {
+        "law_name": "산업안전보건법",
+        "article_no": "제29조의2"
+      },
+      "related_candidate_article": {
+        "law_name": "산업안전보건법",
+        "article_no": "제29조",
+        "article_key": "산업안전보건법:제29조"
+      },
+      "basis_excerpt": "사업주는 안전보건교육 실시 결과를 기록하여 3년간 보존하여야 한다."
+    },
+    {
+      "case_id": "law_article_54_2_new_followup_record",
+      "description": "조문 신설: 중대재해 후속 조치 기록 보존 의무를 신설하는 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제54조의2를 다음과 같이 신설한다. 제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+        },
+        "top_k": 5
+      },
+      "expected_change_type": "제정",
+      "expected_target": {
+        "law_name": "산업안전보건법",
+        "article_no": "제54조의2"
+      },
+      "related_candidate_article": {
+        "law_name": "산업안전보건법",
+        "article_no": "제54조",
+        "article_key": "산업안전보건법:제54조"
+      },
+      "basis_excerpt": "사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+    },
+    {
+      "case_id": "rule_article_41_2_new_customer_response_training",
+      "description": "조문 신설: 고객응대업무 종사자 보호를 위한 정기 훈련 조문을 신설하는 시행규칙 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행규칙 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행규칙",
+          "content": "제41조의2를 다음과 같이 신설한다. 제41조의2(고객응대업무 종사자 보호 훈련) 사업주는 고객의 폭언등으로 인한 건강장해 예방을 위하여 연 1회 이상 고객응대업무 종사자 보호 훈련을 실시하여야 한다."
+        },
+        "top_k": 5
+      },
+      "expected_change_type": "제정",
+      "expected_target": {
+        "law_name": "산업안전보건법 시행규칙",
+        "article_no": "제41조의2"
+      },
+      "related_candidate_article": {
+        "law_name": "산업안전보건법 시행규칙",
+        "article_no": "제41조",
+        "article_key": "산업안전보건법 시행규칙:제41조"
+      },
+      "basis_excerpt": "연 1회 이상 고객응대업무 종사자 보호 훈련을 실시하여야 한다."
+    },
+    {
+      "case_id": "decree_article_8_2_2_new_additional_materials",
+      "description": "조문 신설: 협조 요청 자료의 추가 제출 기준을 신설하는 시행령 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행령 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행령",
+          "content": "제8조의2의2를 다음과 같이 신설한다. 제8조의2의2(추가 자료의 제출) 관계 행정기관의 장은 제8조의2에 따른 자료 외에 사업장 안전관리 현황 확인에 필요한 추가 자료를 요청할 수 있다."
+        },
+        "top_k": 5
+      },
+      "expected_change_type": "제정",
+      "expected_target": {
+        "law_name": "산업안전보건법 시행령",
+        "article_no": "제8조의2의2"
+      },
+      "related_candidate_article": {
+        "law_name": "산업안전보건법 시행령",
+        "article_no": "제8조의2",
+        "article_key": "산업안전보건법 시행령:제8조의2"
+      },
+      "basis_excerpt": "사업장 안전관리 현황 확인에 필요한 추가 자료를 요청할 수 있다."
+    }
+  ]
+}

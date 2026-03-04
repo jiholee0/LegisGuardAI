@@ -18,6 +18,15 @@ from app.services.text_normalizer import normalize_text
 NUMBER_PATTERN = re.compile(r"\d+(?:\.\d+)?(?:개월|일|년|회|시간|분|%|명)?")
 ARTICLE_REF_CLEANUP_PATTERN = re.compile(r"제\s*\d+\s*조(?:의\s*\d+)?(?:\s*제\s*\d+\s*항)?")
 QUOTED_TEXT_PATTERN = re.compile(r'"([^"]+)"|\'([^\']+)\'')
+DELETE_PATTERN = re.compile(r"(삭제한다|삭제함|삭제)")
+TARGET_LOCATOR_PATTERN = re.compile(r"(제\s*\d+\s*조(?:의\s*\d+)?(?:\s*제\s*\d+\s*항)?(?:\s*제\s*\d+\s*호)?)")
+KEYWORD_PATTERN = re.compile(r"[가-힣A-Za-z0-9]{2,}")
+STOPWORDS = {
+    "제", "조", "항", "호", "한다", "하여야", "있다", "경우", "다음", "관련", "조항", "의무", "실시",
+    "포함", "정기", "절차", "대처방법", "사업주", "규정", "법", "시행규칙", "시행령",
+}
+MIN_VECTOR_MATCH_SCORE = 0.45
+MIN_KEYWORD_OVERLAP = 1
 
 
 class LawArticleMatchTool:
@@ -30,37 +39,88 @@ class LawArticleMatchTool:
     def get_collection(self):
         return self.chroma_client.get_collection(self.settings.chroma_collection_name)
 
-    def match(self, *, collection, law_name: str | None, candidate: NoticeArticleCandidate):
+    def lookup_exact(self, *, law_name: str | None, candidate: NoticeArticleCandidate):
         with self.session_factory() as session:
             article_repo = ArticleRepository(session)
             if law_name and candidate.article_no:
                 exact_matches = article_repo.list_by_law_name_and_article_no(law_name=law_name, article_no=candidate.article_no)
                 if exact_matches:
-                    return exact_matches[0], 1.0, "exact_article_no"
+                    return exact_matches[0], 1.0
+            return None, None
 
+    def search_vector(self, *, collection, law_name: str | None, candidate: NoticeArticleCandidate):
+        with self.session_factory() as session:
+            article_repo = ArticleRepository(session)
             embedding = self.embedding_provider.embed_query(candidate.source_text)
             where = {"law_name": law_name} if law_name else None
             result = collection.query(
                 query_embeddings=[embedding],
-                n_results=1,
+                n_results=5,
                 where=where,
             )
             ids = result.get("ids", [[]])[0]
             if not ids:
-                return None, None, "unmatched"
+                return None, None
 
-            metadata = result.get("metadatas", [[]])[0][0]
+            metadatas = result.get("metadatas", [[]])[0]
             distances = result.get("distances", [[]])[0]
-            article = article_repo.get_by_id(int(metadata["article_id"]))
-            if article is None:
-                return None, None, "unmatched"
+            query_keywords = self._extract_keywords(candidate.source_text)
 
-            distance = float(distances[0]) if distances else 0.0
-            score = round(1.0 / (1.0 + max(distance, 0.0)), 4)
-            return article, score, "vector_search"
+            ranked_candidates: list[tuple[float, int, object]] = []
+            for index, metadata in enumerate(metadatas):
+                article = article_repo.get_by_id(int(metadata["article_id"]))
+                if article is None:
+                    continue
+                distance = float(distances[index]) if index < len(distances) else 0.0
+                vector_score = round(1.0 / (1.0 + max(distance, 0.0)), 4)
+                overlap_count = self._keyword_overlap_count(
+                    query_keywords=query_keywords,
+                    article_text=f"{article.article_title or ''} {article.normalized_text}",
+                )
+                combined_score = vector_score + min(overlap_count * 0.15, 0.45)
+                ranked_candidates.append((combined_score, overlap_count, article))
+
+            if not ranked_candidates:
+                return None, None
+
+            ranked_candidates.sort(
+                key=lambda item: (item[0], item[1]),
+                reverse=True,
+            )
+            best_score, overlap_count, best_article = ranked_candidates[0]
+            if best_score < MIN_VECTOR_MATCH_SCORE or overlap_count < MIN_KEYWORD_OVERLAP:
+                return None, None
+            return best_article, round(best_score, 4)
+
+    def _extract_keywords(self, text: str) -> set[str]:
+        keywords = {normalize_text(token) for token in KEYWORD_PATTERN.findall(normalize_text(text))}
+        return {token for token in keywords if token not in STOPWORDS and len(token) >= 2}
+
+    def _keyword_overlap_count(self, *, query_keywords: set[str], article_text: str) -> int:
+        if not query_keywords:
+            return 0
+        article_keywords = self._extract_keywords(article_text)
+        return len(query_keywords & article_keywords)
 
 
 class ArticleDiffTool:
+    def validate_target(self, *, candidate: NoticeArticleCandidate, matched_article):
+        target_locator = self._extract_target_locator(candidate)
+        if matched_article is None:
+            return target_locator, None, None
+        if target_locator is None:
+            return None, True, None
+
+        article_text = matched_article.article_text
+        paragraph_no = self._extract_paragraph_no(target_locator)
+        item_no = self._extract_item_no(target_locator)
+
+        if paragraph_no is not None and not self._paragraph_exists(article_text, paragraph_no):
+            return target_locator, False, f"현행 조문에서 제{paragraph_no}항을 찾지 못함"
+        if item_no is not None and not self._item_exists(article_text, item_no):
+            return target_locator, False, f"현행 조문에서 제{item_no}호를 찾지 못함"
+        return target_locator, True, None
+
     def build_base_diff(
         self,
         *,
@@ -68,23 +128,48 @@ class ArticleDiffTool:
         matched_article,
         match_score: float | None,
         match_method: str,
+        change_type: str,
+        target_locator: str | None = None,
+        target_exists: bool | None = None,
+        validation_message: str | None = None,
     ) -> NoticeArticleDiff:
         current_text = matched_article.article_text if matched_article is not None else None
+        fact_status = "confirmed"
+        if matched_article is None and change_type != "제정":
+            fact_status = "unmatched"
+        elif target_exists is False:
+            fact_status = "invalid_target"
+
         before_text = current_text
-        after_text = self._derive_rule_based_after_text(candidate.source_text)
-        diff_segments = self._build_diff_segments(normalize_text(before_text or ""), after_text) if before_text and after_text else []
-        numeric_changes = self._extract_numeric_changes(normalize_text(before_text or ""), after_text)
+        derived_after_text = self._derive_rule_based_after_text(candidate.source_text)
+        after_text = derived_after_text or None
+        if fact_status == "invalid_target":
+            before_text = None
+            after_text = None
+            diff_segments = []
+            numeric_changes = []
+        elif change_type == "제정" and matched_article is None:
+            before_text = None
+            diff_segments = self._build_diff_segments("", derived_after_text)
+            numeric_changes = self._extract_numeric_changes("", derived_after_text)
+        else:
+            diff_segments = self._build_diff_segments(normalize_text(before_text or ""), derived_after_text) if before_text else []
+            numeric_changes = self._extract_numeric_changes(normalize_text(before_text or ""), derived_after_text)
 
         return NoticeArticleDiff(
             article_no=candidate.article_no,
+            target_locator=target_locator,
+            target_exists=target_exists,
+            fact_status=fact_status,
+            validation_message=validation_message,
             matched_law_name=matched_article.law.law_name if matched_article is not None else None,
             matched_article_no=matched_article.article_no if matched_article is not None else None,
             matched_article_key=matched_article.article_key if matched_article is not None else None,
             current_text=current_text,
             before_text=before_text,
             after_text=after_text,
-            diff_summary=None,
-            labels=[],
+            diff_summary=self._build_invalid_target_summary(target_locator, validation_message) if fact_status == "invalid_target" else None,
+            labels=["대상미존재"] if fact_status == "invalid_target" else [],
             match_score=match_score,
             match_method=match_method,
             analysis_method="rule_based",
@@ -148,6 +233,8 @@ class ArticleDiffTool:
         return ARTICLE_REF_CLEANUP_PATTERN.sub(" ", normalize_text(text))
 
     def _derive_rule_based_after_text(self, source_text: str) -> str:
+        if DELETE_PATTERN.search(source_text):
+            return ""
         quoted_texts = [
             normalize_text(match.group(1) or match.group(2) or "")
             for match in QUOTED_TEXT_PATTERN.finditer(source_text)
@@ -175,3 +262,55 @@ class ArticleDiffTool:
                 highlights.append(DiffHighlight(type="insert", before=None, after=segment.text))
             index += 1
         return highlights
+
+
+    def _extract_target_locator(self, candidate: NoticeArticleCandidate) -> str | None:
+        if candidate.article_ref_text:
+            locator = normalize_text(candidate.article_ref_text)
+            if "제" in locator and ("항" in locator or "호" in locator):
+                return locator
+        match = TARGET_LOCATOR_PATTERN.search(candidate.source_text)
+        if not match:
+            return None
+        locator = normalize_text(match.group(1))
+        if "항" in locator or "호" in locator:
+            return locator
+        return None
+
+    def _extract_paragraph_no(self, locator: str) -> int | None:
+        match = re.search(r"제\s*(\d+)\s*항", locator)
+        return int(match.group(1)) if match else None
+
+    def _extract_item_no(self, locator: str) -> int | None:
+        match = re.search(r"제\s*(\d+)\s*호", locator)
+        return int(match.group(1)) if match else None
+
+    def _paragraph_exists(self, article_text: str, paragraph_no: int) -> bool:
+        marker = self._to_circled_number(paragraph_no)
+        if marker is None:
+            return False
+        return marker in article_text
+
+    def _item_exists(self, article_text: str, item_no: int) -> bool:
+        return bool(
+            re.search(
+                rf"(?:(?<=\n)|^|\s){item_no}(?:\.|\))\s",
+                article_text,
+            )
+        )
+
+    def _to_circled_number(self, number: int) -> str | None:
+        circled_numbers = {
+            1: "①", 2: "②", 3: "③", 4: "④", 5: "⑤",
+            6: "⑥", 7: "⑦", 8: "⑧", 9: "⑨", 10: "⑩",
+            11: "⑪", 12: "⑫", 13: "⑬", 14: "⑭", 15: "⑮",
+            16: "⑯", 17: "⑰", 18: "⑱", 19: "⑲", 20: "⑳",
+        }
+        return circled_numbers.get(number)
+
+    def _build_invalid_target_summary(self, target_locator: str | None, validation_message: str | None) -> str:
+        if target_locator and validation_message:
+            return f"{target_locator}에 대한 변경 요청이 있으나 {validation_message}"
+        if target_locator:
+            return f"{target_locator}에 대한 변경 요청이 있으나 현행 조문에서 대상을 찾지 못함"
+        return "변경 요청 대상이 현행 조문에서 확인되지 않음"

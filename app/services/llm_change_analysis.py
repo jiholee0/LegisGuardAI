@@ -13,7 +13,7 @@ CHANGE_ANALYST_SYSTEM_PROMPT = """
 법률 해석, 리스크 판단, 조직 영향 판단은 하지 않는다.
 반드시 JSON 객체만 반환한다. 키는 아래와 같다.
 - before_text: 현행 조문에서 실제로 변경되는 문장 또는 항 본문. current_text 전체를 그대로 복사하지 말고, 비교 대상이 되는 최소 범위만 추출
-- after_text: 개정 후 조문 또는 개정된 항 본문. source_text를 그대로 반복하지 말고, 실제 반영 결과 문장으로 정리
+- after_text: 개정 후 조문 또는 개정된 항 본문. 삭제 조문 또는 삭제 항목이면 빈 문자열로 반환
 - diff_summary: 짧은 한글 요약
 - labels: 고정형 한글 라벨 배열. 예: ["빈도변경", "문구정정", "조문개정"]
 - highlights: 배열, 각 원소는 {type, before, after}
@@ -22,6 +22,7 @@ CHANGE_ANALYST_SYSTEM_PROMPT = """
 op 는 equal, delete, insert 만 허용한다.
 highlight type 은 replace, insert, delete 만 허용한다.
 알 수 없는 값은 빈 문자열 또는 빈 배열로 반환한다.
+삭제 유형은 after_text를 비워도 된다.
 """.strip()
 
 
@@ -33,7 +34,8 @@ class LlmChangeAnalysisTool:
         user_prompt = self._build_user_prompt(current_text=current_text, source_text=source_text)
         payload = self.llm_client.generate_json(system_prompt=CHANGE_ANALYST_SYSTEM_PROMPT, user_prompt=user_prompt)
         before_text = normalize_text(str(payload.get("before_text", ""))) or base_diff.before_text
-        after_text = normalize_text(str(payload.get("after_text", ""))) or base_diff.after_text
+        raw_after_text = normalize_text(str(payload.get("after_text", "")))
+        after_text = raw_after_text if raw_after_text else None
 
         return base_diff.model_copy(
             update={

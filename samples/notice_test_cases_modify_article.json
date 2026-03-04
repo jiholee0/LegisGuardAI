@@ -1,0 +1,674 @@
+{
+  "test_suite": "조문 개정 테스트 케이스",
+  "change_kind": "조문 개정",
+  "test_cases": [
+    {
+      "case_id": "law_article_14_plan_frequency",
+      "description": "정상 케이스: 이사회 보고 계획의 빈도 문구를 바꾼 일부개정안 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제14조 제1항 \"매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법",
+        "article_no": "제14조",
+        "article_key": "산업안전보건법:제14조"
+      },
+      "expected_behavior": {
+        "target_locator": "제14조 제1항",
+        "target_exists": true,
+        "fact_status": "confirmed",
+        "match_method": "exact_article_no"
+      },
+      "basis_excerpt": "매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.",
+      "result": {
+        "agent": "change_analyst",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 일부개정안",
+          "law_name": "산업안전보건법",
+          "change_type": "일부개정",
+          "normalized_text": "제14조 제1항 \"매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다.",
+          "article_candidates": [
+            {
+              "article_no": "제14조",
+              "article_ref_text": "제14조 제1항",
+              "source_text": "제14조 제1항 \"매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+            }
+          ]
+        },
+        "article_diffs": [
+          {
+            "article_no": "제14조",
+            "target_locator": "제14조 제1항",
+            "target_exists": true,
+            "fact_status": "confirmed",
+            "validation_message": null,
+            "matched_law_name": "산업안전보건법",
+            "matched_article_no": "제14조",
+            "matched_article_key": "산업안전보건법:제14조",
+            "current_text": "제14조(이사회 보고 및 승인 등)\n\n① 「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라 매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.\n\n② 제1항에 따른 대표이사는 제1항에 따른 안전 및 보건에 관한 계획을 성실하게 이행하여야 한다.\n\n③ 제1항에 따른 안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다.",
+            "before_text": "매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다",
+            "after_text": "반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다",
+            "diff_summary": "제14조 제1항 문구 중 '매년'이 '반기마다'로 변경되어 계획 수립 및 이사회 보고 빈도가 연1회에서 연2회로 변경됨",
+            "labels": [
+              "빈도변경",
+              "문구정정",
+              "조문개정"
+            ],
+            "match_score": 1,
+            "match_method": "exact_article_no",
+            "analysis_method": "llm",
+            "diff_segments": [
+              {
+                "op": "equal",
+                "text": "「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라"
+              },
+              {
+                "op": "delete",
+                "text": "매년"
+              },
+              {
+                "op": "insert",
+                "text": "반기마다"
+              },
+              {
+                "op": "equal",
+                "text": "회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다."
+              }
+            ],
+            "highlights": [
+              {
+                "type": "replace",
+                "before": "매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다",
+                "after": "반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다"
+              }
+            ],
+            "numeric_changes": [
+              {
+                "field": "보고/수립 빈도",
+                "before": "매년 (연1회)",
+                "after": "반기마다 (연2회)"
+              }
+            ],
+            "source_text": "제14조 제1항 \"매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
+            "output_summary": "law_name=산업안전보건법, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법, article_no=제14조",
+            "output_summary": "method=exact, matched=yes, article_key=산업안전보건법:제14조, score=1.0"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "skipped",
+            "input_summary": "law_name=산업안전보건법, article_no=제14조",
+            "output_summary": "exact match already found"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=제14조, locator=제14조 제1항",
+            "output_summary": "locator=제14조 제1항, target_exists=yes"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=제14조, match_method=exact_article_no",
+            "output_summary": "fact_status=confirmed, before=yes, after=yes"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "success",
+            "input_summary": "current_text=yes, source_text=yes",
+            "output_summary": "labels=3, highlights=1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "decree_article_8_2_contract_power_info",
+      "description": "정상 케이스: 협조 요청 대상 정보의 범위를 조정하는 시행령 더미",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행령 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행령",
+          "content": "제8조의2 제1호의 사업장별 계약전력 정보에 최근 3년간 변동 이력을 포함하도록 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법 시행령",
+        "article_no": "제8조의2",
+        "article_key": "산업안전보건법 시행령:제8조의2"
+      },
+      "expected_behavior": {
+        "target_exists": true,
+        "fact_status": "confirmed",
+        "match_method": "exact_article_no"
+      },
+      "basis_excerpt": "사업장별 계약전력 정보",
+      "result": {
+        "agent": "change_analyst",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 시행령 일부개정령안",
+          "law_name": "산업안전보건법 시행령",
+          "change_type": "일부개정",
+          "normalized_text": "제8조의2 제1호의 사업장별 계약전력 정보에 최근 3년간 변동 이력을 포함하도록 한다.",
+          "article_candidates": [
+            {
+              "article_no": "제8조의2",
+              "article_ref_text": "제8조의2",
+              "source_text": "제8조의2 제1호의 사업장별 계약전력 정보에 최근 3년간 변동 이력을 포함하도록 한다."
+            }
+          ]
+        },
+        "article_diffs": [
+          {
+            "article_no": "제8조의2",
+            "target_locator": "제8조의2 제1호",
+            "target_exists": true,
+            "fact_status": "confirmed",
+            "validation_message": null,
+            "matched_law_name": "산업안전보건법 시행령",
+            "matched_article_no": "제8조의2",
+            "matched_article_key": "산업안전보건법 시행령:제8조의2",
+            "current_text": "제8조의2(협조 요청 대상 정보 또는 자료) 법 제8조제5항제3호에서 \"대통령령으로 정하는 정보 또는 자료\"란 다음 각 호의 어느 하나에 해당하는 정보를 말한다.\n\n1. 「전기사업법」 제16조제1항에 따른 기본공급약관에서 정하는 사업장별 계약전력 정보(법 제42조제1항에 따른 유해위험방지계획서의 심사를 위하여 필요한 경우로 한정한다)\n2. 「화학물질관리법」 제9조제1항에 따른 화학물질확인 정보(같은 법 제52조제1항에 따른 자료보호기간 중에 있는 정보는 제외한다)",
+            "before_text": "1. 「전기사업법」 제16조제1항에 따른 기본공급약관에서 정하는 사업장별 계약전력 정보(법 제42조제1항에 따른 유해위험방지계획서의 심사를 위하여 필요한 경우로 한정한다)",
+            "after_text": "1. 「전기사업법」 제16조제1항에 따른 기본공급약관에서 정하는 사업장별 계약전력 정보(최근 3년간 변동 이력을 포함하며, 법 제42조제1항에 따른 유해위험방지계획서의 심사를 위하여 필요한 경우로 한정한다)",
+            "diff_summary": "제8조의2 제1호의 사업장별 계약전력 정보에 최근 3년간 변동 이력 포함 규정이 추가됨",
+            "labels": [
+              "문구정정",
+              "조문개정"
+            ],
+            "match_score": 1,
+            "match_method": "exact_article_no",
+            "analysis_method": "llm",
+            "diff_segments": [
+              {
+                "op": "equal",
+                "text": "1. 「전기사업법」 제16조제1항에 따른 기본공급약관에서 정하는 사업장별 계약전력 정보("
+              },
+              {
+                "op": "insert",
+                "text": "최근 3년간 변동 이력을 포함하며,"
+              },
+              {
+                "op": "equal",
+                "text": "법 제42조제1항에 따른 유해위험방지계획서의 심사를 위하여 필요한 경우로 한정한다)"
+              }
+            ],
+            "highlights": [
+              {
+                "type": "insert",
+                "before": null,
+                "after": "최근 3년간 변동 이력을 포함하며,"
+              }
+            ],
+            "numeric_changes": [
+              {
+                "field": "변동 이력 기간",
+                "before": "",
+                "after": "3년"
+              }
+            ],
+            "source_text": "제8조의2 제1호의 사업장별 계약전력 정보에 최근 3년간 변동 이력을 포함하도록 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 시행령 일부개정령안",
+            "output_summary": "law_name=산업안전보건법 시행령, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법 시행령, article_no=제8조의2",
+            "output_summary": "method=exact, matched=yes, article_key=산업안전보건법 시행령:제8조의2, score=1.0"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "skipped",
+            "input_summary": "law_name=산업안전보건법 시행령, article_no=제8조의2",
+            "output_summary": "exact match already found"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=제8조의2, locator=제8조의2 제1호",
+            "output_summary": "locator=제8조의2 제1호, target_exists=yes"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=제8조의2, match_method=exact_article_no",
+            "output_summary": "fact_status=confirmed, before=yes, after=yes"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "success",
+            "input_summary": "current_text=yes, source_text=yes",
+            "output_summary": "labels=2, highlights=1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "law_article_14_wrong_before_text",
+      "description": "예외 케이스: 조항은 존재하지만, 개정 전 문구가 실제 현행 내용과 불일치하는 경우",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제14조 제1항 \"매월 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법",
+        "article_no": "제14조",
+        "article_key": "산업안전보건법:제14조"
+      },
+      "expected_behavior": {
+        "target_locator": "제14조 제1항",
+        "target_exists": true,
+        "fact_status": "invalid_target",
+        "reason": "현행 제14조 제1항에는 '매년'이 존재하고 '매월'은 존재하지 않으므로 before_text 불일치로 처리되어야 한다."
+      },
+      "basis_excerpt": "매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.",
+      "result": {
+        "agent": "change_analyst",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 일부개정안",
+          "law_name": "산업안전보건법",
+          "change_type": "일부개정",
+          "normalized_text": "제14조 제1항 \"매월 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다.",
+          "article_candidates": [
+            {
+              "article_no": "제14조",
+              "article_ref_text": "제14조 제1항",
+              "source_text": "제14조 제1항 \"매월 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+            }
+          ]
+        },
+        "article_diffs": [
+          {
+            "article_no": "제14조",
+            "target_locator": "제14조 제1항",
+            "target_exists": true,
+            "fact_status": "confirmed",
+            "validation_message": null,
+            "matched_law_name": "산업안전보건법",
+            "matched_article_no": "제14조",
+            "matched_article_key": "산업안전보건법:제14조",
+            "current_text": "제14조(이사회 보고 및 승인 등)\n\n① 「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라 매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.\n\n② 제1항에 따른 대표이사는 제1항에 따른 안전 및 보건에 관한 계획을 성실하게 이행하여야 한다.\n\n③ 제1항에 따른 안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다.",
+            "before_text": "① 「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라 매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.",
+            "after_text": "① 「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라 반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.",
+            "diff_summary": "제14조 제1항에서 계획 수립 주기를 '매년'에서 '반기마다'로 변경",
+            "labels": [
+              "빈도변경",
+              "문구정정",
+              "조문개정"
+            ],
+            "match_score": 1,
+            "match_method": "exact_article_no",
+            "analysis_method": "llm",
+            "diff_segments": [
+              {
+                "op": "equal",
+                "text": "① 「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라"
+              },
+              {
+                "op": "delete",
+                "text": "매년"
+              },
+              {
+                "op": "insert",
+                "text": "반기마다"
+              },
+              {
+                "op": "equal",
+                "text": "회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다."
+              }
+            ],
+            "highlights": [
+              {
+                "type": "replace",
+                "before": "매년",
+                "after": "반기마다"
+              }
+            ],
+            "numeric_changes": [
+              {
+                "field": "계획 수립 주기",
+                "before": "매년",
+                "after": "반기마다"
+              }
+            ],
+            "source_text": "제14조 제1항 \"매월 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"를 \"반기마다 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다\"로 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
+            "output_summary": "law_name=산업안전보건법, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법, article_no=제14조",
+            "output_summary": "method=exact, matched=yes, article_key=산업안전보건법:제14조, score=1.0"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "skipped",
+            "input_summary": "law_name=산업안전보건법, article_no=제14조",
+            "output_summary": "exact match already found"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=제14조, locator=제14조 제1항",
+            "output_summary": "locator=제14조 제1항, target_exists=yes"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=제14조, match_method=exact_article_no",
+            "output_summary": "fact_status=confirmed, before=yes, after=yes"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "success",
+            "input_summary": "current_text=yes, source_text=yes",
+            "output_summary": "labels=3, highlights=1"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "law_article_14_nonexistent_paragraph",
+      "description": "예외 케이스: 조항은 존재하지만, 지정한 세부 조항(제4항)이 없는 경우",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 일부개정안",
+        "body_json": {
+          "law_name": "산업안전보건법",
+          "content": "제14조 제4항 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다\"를 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원, 교육 및 점검 실적 등의 사항을 포함하여야 한다\"로 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법",
+        "article_no": "제14조",
+        "article_key": "산업안전보건법:제14조"
+      },
+      "expected_behavior": {
+        "target_locator": "제14조 제4항",
+        "target_exists": false,
+        "fact_status": "invalid_target",
+        "reason": "현행 제14조는 제1항부터 제3항까지만 존재하므로 제4항 개정 요청은 대상 미존재로 처리되어야 한다."
+      },
+      "basis_excerpt": "현행 제14조는 ①, ②, ③까지만 존재한다.",
+      "result": {
+        "agent": "change_analyst",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 일부개정안",
+          "law_name": "산업안전보건법",
+          "change_type": "일부개정",
+          "normalized_text": "제14조 제4항 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다\"를 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원, 교육 및 점검 실적 등의 사항을 포함하여야 한다\"로 한다.",
+          "article_candidates": [
+            {
+              "article_no": "제14조",
+              "article_ref_text": "제14조 제4항",
+              "source_text": "제14조 제4항 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다\"를 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원, 교육 및 점검 실적 등의 사항을 포함하여야 한다\"로 한다."
+            }
+          ]
+        },
+        "article_diffs": [
+          {
+            "article_no": "제14조",
+            "target_locator": "제14조 제4항",
+            "target_exists": false,
+            "fact_status": "invalid_target",
+            "validation_message": "현행 조문에서 제4항을 찾지 못함",
+            "matched_law_name": "산업안전보건법",
+            "matched_article_no": "제14조",
+            "matched_article_key": "산업안전보건법:제14조",
+            "current_text": "제14조(이사회 보고 및 승인 등)\n\n① 「상법」 제170조에 따른 주식회사 중 대통령령으로 정하는 회사의 대표이사는 대통령령으로 정하는 바에 따라 매년 회사의 안전 및 보건에 관한 계획을 수립하여 이사회에 보고하고 승인을 받아야 한다.\n\n② 제1항에 따른 대표이사는 제1항에 따른 안전 및 보건에 관한 계획을 성실하게 이행하여야 한다.\n\n③ 제1항에 따른 안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다.",
+            "before_text": null,
+            "after_text": null,
+            "diff_summary": "제14조 제4항에 대한 변경 요청이 있으나 현행 조문에서 제4항을 찾지 못함",
+            "labels": [
+              "대상미존재"
+            ],
+            "match_score": 1,
+            "match_method": "exact_article_no",
+            "analysis_method": "rule_based",
+            "diff_segments": [],
+            "highlights": [],
+            "numeric_changes": [],
+            "source_text": "제14조 제4항 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원 등의 사항을 포함하여야 한다\"를 \"안전 및 보건에 관한 계획에는 안전 및 보건에 관한 비용, 시설, 인원, 교육 및 점검 실적 등의 사항을 포함하여야 한다\"로 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
+            "output_summary": "law_name=산업안전보건법, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법, article_no=제14조",
+            "output_summary": "method=exact, matched=yes, article_key=산업안전보건법:제14조, score=1.0"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "skipped",
+            "input_summary": "law_name=산업안전보건법, article_no=제14조",
+            "output_summary": "exact match already found"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=제14조, locator=제14조 제4항",
+            "output_summary": "locator=제14조 제4항, target_exists=no, message=현행 조문에서 제4항을 찾지 못함"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=제14조, match_method=exact_article_no",
+            "output_summary": "fact_status=invalid_target, before=no, after=no"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "skipped",
+            "input_summary": "current_text=yes, source_text=yes",
+            "output_summary": "invalid target locator"
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "rule_article_41_ambiguous_locator_vector_search",
+      "description": "예외 케이스: 조문번호가 애매해서 내용 기반으로 vector_search_law를 써야 하는 경우",
+      "request_payload": {
+        "input_type": "json",
+        "title": "산업안전보건법 시행규칙 일부개정령안",
+        "body_json": {
+          "law_name": "산업안전보건법 시행규칙",
+          "content": "고객응대업무 매뉴얼 마련 의무 조항 중 대처방법에 정기 점검 절차를 포함하도록 하고, 건강장해 예방 관련 교육은 반기마다 실시하도록 한다."
+        },
+        "top_k": 5
+      },
+      "expected_match": {
+        "law_name": "산업안전보건법 시행규칙",
+        "article_no": "제41조",
+        "article_key": "산업안전보건법 시행규칙:제41조"
+      },
+      "expected_behavior": {
+        "match_method": "vector_search",
+        "fact_status": "confirmed",
+        "reason": "명시적 조문번호가 없고 내용 키워드만 있으므로 '고객응대업무 매뉴얼', '건강장해 예방 관련 교육'을 근거로 제41조를 추론해야 한다."
+      },
+      "basis_excerpt": "고객응대업무 매뉴얼 마련 / 건강장해 예방 관련 교육 실시",
+      "result": {
+        "agent": "change_analyst",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 시행규칙 일부개정령안",
+          "law_name": "산업안전보건법 시행규칙",
+          "change_type": "일부개정",
+          "normalized_text": "고객응대업무 매뉴얼 마련 의무 조항 중 대처방법에 정기 점검 절차를 포함하도록 하고, 건강장해 예방 관련 교육은 반기마다 실시하도록 한다.",
+          "article_candidates": [
+            {
+              "article_no": null,
+              "article_ref_text": null,
+              "source_text": "고객응대업무 매뉴얼 마련 의무 조항 중 대처방법에 정기 점검 절차를 포함하도록 하고, 건강장해 예방 관련 교육은 반기마다 실시하도록 한다."
+            }
+          ]
+        },
+        "article_diffs": [
+          {
+            "article_no": null,
+            "target_locator": null,
+            "target_exists": true,
+            "fact_status": "confirmed",
+            "validation_message": null,
+            "matched_law_name": "산업안전보건법 시행규칙",
+            "matched_article_no": "제41조",
+            "matched_article_key": "산업안전보건법 시행규칙:제41조",
+            "current_text": "제41조(고객의 폭언등으로 인한 건강장해 예방조치) 사업주는 법 제41조제1항에 따라 건강장해를 예방하기 위하여 다음 각 호의 조치를 해야 한다.\n\n1. 법 제41조제1항에 따른 폭언등을 하지 않도록 요청하는 문구 게시 또는 음성 안내\n2. 고객과의 문제 상황 발생 시 대처방법 등을 포함하는 고객응대업무 매뉴얼 마련\n3. 제2호에 따른 고객응대업무 매뉴얼의 내용 및 건강장해 예방 관련 교육 실시\n4. 그 밖에 법 제41조제1항에 따른 고객응대근로자의 건강장해 예방을 위하여 필요한 조치",
+            "before_text": "2. 고객과의 문제 상황 발생 시 대처방법 등을 포함하는 고객응대업무 매뉴얼 마련 3. 제2호에 따른 고객응대업무 매뉴얼의 내용 및 건강장해 예방 관련 교육 실시",
+            "after_text": "2. 고객과의 문제 상황 발생 시 대처방법 및 정기 점검 절차를 포함하는 고객응대업무 매뉴얼 마련 3. 제2호에 따른 고객응대업무 매뉴얼의 내용 및 건강장해 예방 관련 교육을 반기마다 실시",
+            "diff_summary": "제2호에 대처방법에 정기 점검 절차 포함, 제3호에 건강장해 예방 교육의 반기별 실시 명시",
+            "labels": [
+              "조문개정",
+              "문구정정",
+              "빈도변경"
+            ],
+            "match_score": 0.826,
+            "match_method": "vector_search",
+            "analysis_method": "llm",
+            "diff_segments": [
+              {
+                "op": "equal",
+                "text": "2. 고객과의 문제 상황 발생 시"
+              },
+              {
+                "op": "equal",
+                "text": "대처방법"
+              },
+              {
+                "op": "delete",
+                "text": "등을 포함하는"
+              },
+              {
+                "op": "insert",
+                "text": "및 정기 점검 절차를 포함하는"
+              },
+              {
+                "op": "equal",
+                "text": "고객응대업무 매뉴얼 마련"
+              },
+              {
+                "op": "equal",
+                "text": "3. 제2호에 따른 고객응대업무 매뉴얼의 내용 및"
+              },
+              {
+                "op": "delete",
+                "text": "건강장해 예방 관련 교육 실시"
+              },
+              {
+                "op": "insert",
+                "text": "건강장해 예방 관련 교육을 반기마다 실시"
+              }
+            ],
+            "highlights": [
+              {
+                "type": "replace",
+                "before": "대처방법 등을 포함하는",
+                "after": "대처방법 및 정기 점검 절차를 포함하는"
+              },
+              {
+                "type": "replace",
+                "before": "건강장해 예방 관련 교육 실시",
+                "after": "건강장해 예방 관련 교육을 반기마다 실시"
+              }
+            ],
+            "numeric_changes": [
+              {
+                "field": "건강장해 예방 교육 실시 주기",
+                "before": "",
+                "after": "반기마다"
+              }
+            ],
+            "source_text": "고객응대업무 매뉴얼 마련 의무 조항 중 대처방법에 정기 점검 절차를 포함하도록 하고, 건강장해 예방 관련 교육은 반기마다 실시하도록 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 시행규칙 일부개정령안",
+            "output_summary": "law_name=산업안전보건법 시행규칙, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법 시행규칙, article_no=미상",
+            "output_summary": "method=exact, matched=no"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법 시행규칙, article_no=미상",
+            "output_summary": "method=vector, matched=yes, article_key=산업안전보건법 시행규칙:제41조, score=0.826"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=미상, locator=없음",
+            "output_summary": "locator=없음, target_exists=unknown"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=미상, match_method=vector_search",
+            "output_summary": "fact_status=confirmed, before=yes, after=yes"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "success",
+            "input_summary": "current_text=yes, source_text=yes",
+            "output_summary": "labels=3, highlights=2"
+          }
+        ]
+      }
+    }
+  ]
+}

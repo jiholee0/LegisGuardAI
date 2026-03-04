@@ -76,6 +76,10 @@ class DiffHighlight(BaseModel):
 
 class NoticeArticleDiff(BaseModel):
     article_no: str | None = None
+    target_locator: str | None = None
+    target_exists: bool | None = None
+    fact_status: Literal["confirmed", "invalid_target", "unmatched"] = "confirmed"
+    validation_message: str | None = None
     matched_law_name: str | None = None
     matched_article_no: str | None = None
     matched_article_key: str | None = None
@@ -93,8 +97,15 @@ class NoticeArticleDiff(BaseModel):
     source_text: str
 
 
+class ToolAuditItem(BaseModel):
+    tool_name: str
+    status: Literal["success", "skipped", "error"]
+    input_summary: str | None = None
+    output_summary: str | None = None
+
+
 class NoticeDiffResponse(BaseModel):
     agent: Literal["change_analyst"] = "change_analyst"
     parsed_notice: NoticeParseResult
     article_diffs: list[NoticeArticleDiff]
-    tool_audit: list[str] = Field(default_factory=list)
+    tool_audit: list[ToolAuditItem] = Field(default_factory=list)

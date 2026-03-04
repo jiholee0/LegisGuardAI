@@ -28,6 +28,21 @@ def _raise_with_response_details(response: httpx.Response, context: str) -> None
         raise RuntimeError(f"{context} failed with HTTP {response.status_code}: {body}") from exc
 
 
+def _post_json(*, url: str, headers: dict, json_body: dict, timeout: httpx.Timeout, params: dict | None = None) -> httpx.Response:
+    try:
+        return httpx.post(
+            url,
+            headers=headers,
+            params=params,
+            json=json_body,
+            timeout=timeout,
+        )
+    except httpx.TimeoutException as exc:
+        raise RuntimeError(f"LLM request timed out while calling {url}") from exc
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"LLM request failed while calling {url}: {exc}") from exc
+
+
 class OpenAICompatibleLlmClient:
     def __init__(self, base_url: str, api_key: str, model: str, timeout_seconds: float) -> None:
         self.base_url = base_url.rstrip("/")
@@ -36,13 +51,13 @@ class OpenAICompatibleLlmClient:
         self.timeout_seconds = timeout_seconds
 
     def generate_json(self, *, system_prompt: str, user_prompt: str) -> dict:
-        response = httpx.post(
-            f"{self.base_url}/chat/completions",
+        response = _post_json(
+            url=f"{self.base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
             },
-            json={
+            json_body={
                 "model": self.model,
                 "response_format": {"type": "json_object"},
                 "messages": [
@@ -76,14 +91,14 @@ class AzureOpenAILlmClient:
         self.timeout_seconds = timeout_seconds
 
     def generate_json(self, *, system_prompt: str, user_prompt: str) -> dict:
-        response = httpx.post(
-            f"{self.base_url}/openai/deployments/{self.deployment}/chat/completions",
+        response = _post_json(
+            url=f"{self.base_url}/openai/deployments/{self.deployment}/chat/completions",
             headers={
                 "api-key": self.api_key,
                 "Content-Type": "application/json",
             },
             params={"api-version": self.api_version},
-            json={
+            json_body={
                 "response_format": {"type": "json_object"},
                 "messages": [
                     {"role": "system", "content": system_prompt},
