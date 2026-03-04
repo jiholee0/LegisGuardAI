@@ -24,6 +24,13 @@ class Settings:
     embedding_model_name: str
     embedding_dimension: int
     article_chunk_char_limit: int
+    llm_provider: str
+    llm_base_url: str | None
+    llm_api_key: str | None
+    llm_model: str
+    llm_deployment: str | None
+    llm_api_version: str
+    llm_timeout_seconds: float
 
     @property
     def configured_targets(self) -> list[str]:
@@ -60,6 +67,13 @@ def get_settings() -> Settings:
         embedding_model_name=os.getenv("EMBEDDING_MODEL_NAME", "BAAI/bge-m3"),
         embedding_dimension=int(os.getenv("EMBEDDING_DIMENSION", "256")),
         article_chunk_char_limit=int(os.getenv("ARTICLE_CHUNK_CHAR_LIMIT", "900")),
+        llm_provider=os.getenv("LLM_PROVIDER", "disabled"),
+        llm_base_url=os.getenv("LLM_BASE_URL"),
+        llm_api_key=os.getenv("LLM_API_KEY"),
+        llm_model=os.getenv("LLM_MODEL", "gpt-4.1-mini"),
+        llm_deployment=os.getenv("LLM_DEPLOYMENT"),
+        llm_api_version=os.getenv("LLM_API_VERSION", "2024-10-21"),
+        llm_timeout_seconds=float(os.getenv("LLM_TIMEOUT_SECONDS", "30")),
     )
     settings.ensure_data_dirs()
     return settings

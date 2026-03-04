@@ -50,6 +50,8 @@ class LawIngestService:
                     try:
                         logger.info("Searching law metadata", extra={"run_id": run.id, "target": target})
                         summaries = self.client.search_law(target)
+                        if not isinstance(summaries, list):
+                            summaries = [summaries]
                         logger.info(
                             "Resolved law metadata",
                             extra={
@@ -61,6 +63,8 @@ class LawIngestService:
                         )
                         upserted_articles_for_target = 0
                         for summary in summaries:
+                            detail_path = getattr(summary, "detail_path", None)
+                            detail_params = getattr(summary, "detail_params", None)
                             logger.info(
                                 "Fetching law detail",
                                 extra={
@@ -68,11 +72,11 @@ class LawIngestService:
                                     "target": target,
                                     "law_code": summary.law_code,
                                     "law_name": summary.law_name,
-                                    "detail_path": summary.detail_path,
-                                    "detail_params": summary.detail_params,
+                                    "detail_path": detail_path,
+                                    "detail_params": detail_params,
                                 },
                             )
-                            detail_root = self.client.fetch_law_detail(summary)
+                            detail_root = self._fetch_law_detail(summary)
                             logger.info(
                                 "Fetched law detail",
                                 extra={
@@ -183,3 +187,9 @@ class LawIngestService:
                     },
                 )
                 raise
+
+    def _fetch_law_detail(self, summary):
+        try:
+            return self.client.fetch_law_detail(summary)
+        except TypeError:
+            return self.client.fetch_law_detail(summary.law_code)

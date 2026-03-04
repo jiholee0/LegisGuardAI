@@ -156,6 +156,9 @@ class LawXmlParser:
     def _build_article_no(self, article_node: ET.Element, index: int) -> str:
         article_number = self._find_text(article_node, ["조문번호", "조번호", "articleNo", "num"]) or str(index)
         branch_number = self._find_text(article_node, ["조문가지번호"])
+        normalized_article_number = article_number.replace(" ", "")
+        if normalized_article_number.startswith("제") and "조" in normalized_article_number:
+            return normalized_article_number
         if branch_number and branch_number != "0":
             return f"제{article_number}조의{branch_number}"
         return f"제{article_number}조"
