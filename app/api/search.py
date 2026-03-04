@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 
 from app.schemas.search import NoticeDiffResponse, NoticeSearchRequest, NoticeSearchResponse
-from app.services.change_analyst import ChangeAnalystService
-from app.services.llm_change_analysis import LlmChangeAnalysisTool
-from app.services.notice_search import NoticeSearchService
+from app.services.agents.change_analyst import ChangeAnalystService
+from app.services.agents.tools.llm_change_analysis import LlmChangeAnalysisTool
+from app.services.law.notice_search import NoticeSearchService
 
 router = APIRouter(prefix="/search", tags=["search"])
 

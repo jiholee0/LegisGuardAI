@@ -11,7 +11,7 @@ from app.db.repositories.laws import LawRepository
 from app.db.repositories.runs import IngestRunRepository
 from app.db.session import SessionLocal
 from app.schemas.admin import IngestLawsResponse
-from app.services.law_parser import LawXmlParser
+from app.services.law.law_parser import LawXmlParser
 
 
 logger = logging.getLogger(__name__)

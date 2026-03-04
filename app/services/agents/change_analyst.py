@@ -7,10 +7,10 @@ from fastapi import HTTPException
 
 from app.db.session import SessionLocal
 from app.schemas.search import NoticeDiffResponse, NoticeSearchRequest
-from app.services.change_analyst_tools import ArticleDiffTool, LawArticleMatchTool
-from app.services.llm_change_analysis import LlmChangeAnalysisTool
-from app.services.notice_parser import NoticeParserService
-from app.services.tool_registry import ToolRegistry, ToolSpec
+from app.services.agents.tool_registry import ToolRegistry, ToolSpec
+from app.services.agents.tools.change_analyst_tools import ArticleDiffTool, LawArticleMatchTool
+from app.services.agents.tools.llm_change_analysis import LlmChangeAnalysisTool
+from app.services.agents.tools.notice_parser import NoticeParserService
 
 
 class ChangeAnalystService:

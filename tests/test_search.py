@@ -10,8 +10,8 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import get_settings
 from app.db.models import Article, Base, Law
 from app.schemas.search import NoticeBodyJson, NoticeSearchRequest
-from app.services.embedding_index import EmbeddingIndexService
-from app.services.notice_search import NoticeSearchService
+from app.services.law.embedding_index import EmbeddingIndexService
+from app.services.law.notice_search import NoticeSearchService
 
 
 def build_session_factory(tmp_path: Path):

@@ -8,8 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.db.models import Base, Article, Law
-from app.services.law_ingest import LawIngestService
-from app.services.law_parser import LawXmlParser
+from app.services.law.law_ingest import LawIngestService
+from app.services.law.law_parser import LawXmlParser
 
 
 LAW_XML = """

@@ -2,8 +2,8 @@ from fastapi import APIRouter, Body, Depends
 
 from app.core.config import get_settings
 from app.schemas.admin import IngestLawsRequest, IngestLawsResponse, ReindexRequest, ReindexResponse
-from app.services.embedding_index import EmbeddingIndexService
-from app.services.law_ingest import LawIngestService
+from app.services.law.embedding_index import EmbeddingIndexService
+from app.services.law.law_ingest import LawIngestService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

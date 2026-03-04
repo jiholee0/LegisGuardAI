@@ -10,7 +10,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import get_settings
 from app.db.models import Article, Base, Law
-from app.services.embedding_index import EmbeddingIndexService
+from app.services.law.embedding_index import EmbeddingIndexService
 
 
 def build_session_factory(tmp_path: Path):

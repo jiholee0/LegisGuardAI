@@ -10,10 +10,10 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import get_settings
 from app.db.models import Article, Base, Law
 from app.schemas.search import NoticeBodyJson, NoticeSearchRequest
-from app.services.change_analyst import ChangeAnalystService
-from app.services.embedding_index import EmbeddingIndexService
-from app.services.llm_change_analysis import LlmChangeAnalysisTool
-from app.services.notice_parser import NoticeParserService
+from app.services.agents.change_analyst import ChangeAnalystService
+from app.services.agents.tools.llm_change_analysis import LlmChangeAnalysisTool
+from app.services.agents.tools.notice_parser import NoticeParserService
+from app.services.law.embedding_index import EmbeddingIndexService
 
 
 def build_session_factory(tmp_path: Path):
