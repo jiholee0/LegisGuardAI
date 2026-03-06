@@ -54,6 +54,29 @@ class LawXmlParser:
                 }
             )
 
+        for appendix_index, appendix_node in enumerate(self._iter_appendix_nodes(root), start=1):
+            article_no = self._build_appendix_no(appendix_node, appendix_index)
+            article_title = self._find_text(appendix_node, ["별표제목", "title"])
+            article_text = self._build_appendix_text(appendix_node)
+            appendix_key = self._find_appendix_key(appendix_node, appendix_index)
+            normalized_text = normalize_text(article_text)
+            if not normalized_text:
+                continue
+
+            articles.append(
+                {
+                    "article_key": f"{law_name}:{article_no}:{appendix_key}",
+                    "article_no": article_no,
+                    "article_title": article_title,
+                    "article_text": article_text,
+                    "normalized_text": normalized_text,
+                    "article_order": len(articles) + 1,
+                    "paragraph_json": None,
+                    "effective_date": effective_date,
+                    "hash": text_hash(normalized_text),
+                }
+            )
+
         return ParsedLaw(
             law={
                 "law_code": fallback_law_code,
@@ -97,6 +120,13 @@ class LawXmlParser:
 
         return self._join_sections(sections)
 
+    def _build_appendix_text(self, appendix_node: ET.Element) -> str:
+        sections: list[str] = []
+        appendix_text = self._find_multiline_text(appendix_node, ["별표내용", "내용", "text"])
+        if appendix_text:
+            sections.append(appendix_text)
+        return self._join_sections(sections)
+
     def _extract_paragraph_texts(self, article_node: ET.Element) -> list[str]:
         collected: list[str] = []
         for tag in PARAGRAPH_TAG_CANDIDATES:
@@ -129,11 +159,31 @@ class LawXmlParser:
 
         return json.dumps([{"order": index + 1, "text": text} for index, text in enumerate(paragraphs)], ensure_ascii=False)
 
+    def _iter_appendix_nodes(self, root: ET.Element) -> list[ET.Element]:
+        appendix_units = root.findall(".//별표단위")
+        if appendix_units:
+            return appendix_units
+        return []
+
     def _find_text(self, node: ET.Element, candidates: list[str]) -> str | None:
         for candidate in candidates:
             found = node.findtext(candidate)
             if found:
                 return normalize_text(found)
+        return None
+
+    def _find_multiline_text(self, node: ET.Element, candidates: list[str]) -> str | None:
+        for candidate in candidates:
+            found = node.find(candidate)
+            if found is None:
+                continue
+            raw_text = "".join(found.itertext())
+            if not raw_text:
+                continue
+            lines = [normalize_text(line) for line in raw_text.splitlines()]
+            normalized_lines = [line for line in lines if line]
+            if normalized_lines:
+                return "\n".join(normalized_lines)
         return None
 
     def _parse_date(self, value: str | None) -> date | None:
@@ -162,6 +212,34 @@ class LawXmlParser:
         if branch_number and branch_number != "0":
             return f"제{article_number}조의{branch_number}"
         return f"제{article_number}조"
+
+    def _build_appendix_no(self, appendix_node: ET.Element, index: int) -> str:
+        appendix_number = self._find_text(appendix_node, ["별표번호"]) or str(index)
+        appendix_branch_number = self._find_text(appendix_node, ["별표가지번호"])
+        appendix_type = self._find_text(appendix_node, ["별표구분"])
+        normalized_number = appendix_number.lstrip("0") or "0"
+        normalized_branch = (appendix_branch_number or "").lstrip("0")
+        label = self._resolve_appendix_label(appendix_type)
+
+        if normalized_branch:
+            return f"{label} {normalized_number}의{normalized_branch}"
+        return f"{label} {normalized_number}"
+
+    def _find_appendix_key(self, appendix_node: ET.Element, index: int) -> str:
+        appendix_key = appendix_node.attrib.get("별표키")
+        if appendix_key:
+            return appendix_key
+        fallback = self._find_text(appendix_node, ["별표번호"]) or str(index)
+        return f"NO{fallback}"
+
+    def _resolve_appendix_label(self, appendix_type: str | None) -> str:
+        if appendix_type == "서식":
+            return "별지"
+        if appendix_type == "별표":
+            return "별표"
+        if appendix_type:
+            return appendix_type
+        return "별표"
 
     def _join_lines(self, parts: list[str]) -> str:
         normalized_lines = [normalize_text(part) for part in parts if normalize_text(part)]

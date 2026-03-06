@@ -26,7 +26,7 @@
       },
       "basis_excerpt": "제14조 제3항을 삭제한다.",
       "result": {
-        "agent": "change_analyst",
+        "agent": "orchestrator",
         "parsed_notice": {
           "doc_type": "json",
           "title": "산업안전보건법 일부개정안",
@@ -147,7 +147,7 @@
       },
       "basis_excerpt": "제54조 제3항을 삭제한다.",
       "result": {
-        "agent": "change_analyst",
+        "agent": "orchestrator",
         "parsed_notice": {
           "doc_type": "json",
           "title": "산업안전보건법 일부개정안",
@@ -252,7 +252,7 @@
       },
       "basis_excerpt": "제41조 제3호를 삭제한다.",
       "result": {
-        "agent": "change_analyst",
+        "agent": "orchestrator",
         "parsed_notice": {
           "doc_type": "json",
           "title": "산업안전보건법 시행규칙 일부개정령안",

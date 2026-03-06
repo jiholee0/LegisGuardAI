@@ -20,6 +20,9 @@ ARTICLE_REF_CLEANUP_PATTERN = re.compile(r"제\s*\d+\s*조(?:의\s*\d+)?(?:\s*�
 QUOTED_TEXT_PATTERN = re.compile(r'"([^"]+)"|\'([^\']+)\'')
 DELETE_PATTERN = re.compile(r"(삭제한다|삭제함|삭제)")
 TARGET_LOCATOR_PATTERN = re.compile(r"(제\s*\d+\s*조(?:의\s*\d+)?(?:\s*제\s*\d+\s*항)?(?:\s*제\s*\d+\s*호)?)")
+APPENDIX_LOCATOR_PATTERN = re.compile(r"(별표|별지)\s*(\d+)(?:\s*의\s*(\d+))?")
+SUPPLEMENTARY_PATTERN = re.compile(r"부칙")
+LAW_NAME_CANONICAL_PATTERN = re.compile(r"[\s\(\)\[\]\{\}·ㆍ,.]")
 KEYWORD_PATTERN = re.compile(r"[가-힣A-Za-z0-9]{2,}")
 STOPWORDS = {
     "제", "조", "항", "호", "한다", "하여야", "있다", "경우", "다음", "관련", "조항", "의무", "실시",
@@ -42,10 +45,32 @@ class LawArticleMatchTool:
     def lookup_exact(self, *, law_name: str | None, candidate: NoticeArticleCandidate):
         with self.session_factory() as session:
             article_repo = ArticleRepository(session)
-            if law_name and candidate.article_no:
-                exact_matches = article_repo.list_by_law_name_and_article_no(law_name=law_name, article_no=candidate.article_no)
-                if exact_matches:
-                    return exact_matches[0], 1.0
+
+            if not law_name:
+                return None, None
+
+            candidate_article_nos = self._build_candidate_article_numbers(candidate)
+            if not candidate_article_nos:
+                return None, None
+
+            law_name_variants = self._build_law_name_variants(law_name)
+            law_name_key = self._law_name_key(law_name)
+
+            for law_name_variant in law_name_variants:
+                for article_no in candidate_article_nos:
+                    exact_matches = article_repo.list_by_law_name_and_article_no(
+                        law_name=law_name_variant,
+                        article_no=article_no,
+                    )
+                    if exact_matches:
+                        return exact_matches[0], 1.0
+
+            for article_no in candidate_article_nos:
+                for article in article_repo.list_by_article_no(article_no):
+                    if article.law is None:
+                        continue
+                    if self._law_name_key(article.law.law_name) == law_name_key:
+                        return article, 1.0
             return None, None
 
     def search_vector(self, *, collection, law_name: str | None, candidate: NoticeArticleCandidate):
@@ -91,6 +116,79 @@ class LawArticleMatchTool:
             if best_score < MIN_VECTOR_MATCH_SCORE or overlap_count < MIN_KEYWORD_OVERLAP:
                 return None, None
             return best_article, round(best_score, 4)
+
+    def _build_law_name_variants(self, law_name: str) -> list[str]:
+        base = normalize_text(law_name)
+        variants = {base}
+
+        compact = re.sub(r"\s+", "", base)
+        variants.add(compact)
+
+        for suffix in ("시행령", "시행규칙"):
+            if compact.endswith(suffix):
+                prefix = compact[: -len(suffix)]
+                variants.add(f"{prefix} {suffix}".strip())
+                variants.add(f"{prefix}{suffix}".strip())
+
+        return [variant for variant in variants if variant]
+
+    def _law_name_key(self, law_name: str | None) -> str:
+        if not law_name:
+            return ""
+        normalized = normalize_text(law_name)
+        return LAW_NAME_CANONICAL_PATTERN.sub("", normalized)
+
+    def _build_candidate_article_numbers(self, candidate: NoticeArticleCandidate) -> list[str]:
+        values: list[str] = []
+
+        normalized_article_no = self._normalize_article_no_for_match(candidate.article_no)
+        if normalized_article_no:
+            values.append(normalized_article_no)
+
+        locator_article_no = self._extract_article_no_from_locator(candidate)
+        if locator_article_no:
+            values.append(locator_article_no)
+
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for value in values:
+            if value in seen:
+                continue
+            seen.add(value)
+            deduped.append(value)
+        return deduped
+
+    def _normalize_article_no_for_match(self, value: str | None) -> str | None:
+        if not value:
+            return None
+        normalized = normalize_text(value)
+        appendix_match = APPENDIX_LOCATOR_PATTERN.search(normalized)
+        if appendix_match:
+            label = appendix_match.group(1)
+            number = appendix_match.group(2)
+            branch = appendix_match.group(3)
+            if branch:
+                return f"{label} {number}의{branch}"
+            return f"{label} {number}"
+        if SUPPLEMENTARY_PATTERN.search(normalized):
+            return "부칙"
+        return normalized
+
+    def _extract_article_no_from_locator(self, candidate: NoticeArticleCandidate) -> str | None:
+        texts = [candidate.article_ref_text, candidate.source_text]
+        for text in texts:
+            if not text:
+                continue
+            normalized = normalize_text(text)
+            appendix_match = APPENDIX_LOCATOR_PATTERN.search(normalized)
+            if appendix_match:
+                label = appendix_match.group(1)
+                number = appendix_match.group(2)
+                branch = appendix_match.group(3)
+                if branch:
+                    return f"{label} {number}의{branch}"
+                return f"{label} {number}"
+        return None
 
     def _extract_keywords(self, text: str) -> set[str]:
         keywords = {normalize_text(token) for token in KEYWORD_PATTERN.findall(normalize_text(text))}

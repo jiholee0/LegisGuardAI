@@ -1,35 +1,68 @@
 from __future__ import annotations
 
+import logging
 from contextlib import AbstractContextManager
 from typing import Callable
 
 from fastapi import HTTPException
 
 from app.db.session import SessionLocal
-from app.schemas.search import NoticeDiffResponse, NoticeSearchRequest
+from app.schemas.search import NoticeArticleDiff, NoticeDiffResponse, NoticeParseResult
 from app.services.agents.tool_registry import ToolRegistry, ToolSpec
 from app.services.agents.tools.change_analyst_tools import ArticleDiffTool, LawArticleMatchTool
 from app.services.agents.tools.llm_change_analysis import LlmChangeAnalysisTool
-from app.services.agents.tools.notice_parser import NoticeParserService
+
+logger = logging.getLogger(__name__)
 
 
 class ChangeAnalystService:
     def __init__(
         self,
         session_factory: Callable[[], AbstractContextManager] = SessionLocal,
-        parser: NoticeParserService | None = None,
         article_match_tool: LawArticleMatchTool | None = None,
         article_diff_tool: ArticleDiffTool | None = None,
         llm_change_tool: LlmChangeAnalysisTool | None = None,
     ) -> None:
-        self.parser = parser or NoticeParserService()
         self.article_match_tool = article_match_tool or LawArticleMatchTool(session_factory=session_factory)
         self.article_diff_tool = article_diff_tool or ArticleDiffTool()
-        self.llm_change_tool = llm_change_tool
+        self.llm_change_tool = llm_change_tool or self._build_default_llm_tool()
 
-    def analyze_notice(self, payload: NoticeSearchRequest) -> NoticeDiffResponse:
+    def _build_default_llm_tool(self) -> LlmChangeAnalysisTool | None:
+        try:
+            return LlmChangeAnalysisTool()
+        except Exception:
+            logger.exception(
+                "Failed to initialize default LLM change tool; falling back to rule-based mode",
+                extra={"agent": "change_analyst", "function": f"{self.__class__.__name__}.__init__"},
+            )
+            return None
+
+    def analyze_parsed_notice(self, parsed_notice: NoticeParseResult) -> NoticeDiffResponse:
+        analysis_mode = parsed_notice.analysis_mode
+        logger.info(
+            "Change analyst input: mode=%s, law_name=%s, change_types=%s, candidates=%s",
+            analysis_mode,
+            parsed_notice.law_name or "미상",
+            parsed_notice.change_types,
+            len(parsed_notice.article_candidates),
+            extra={
+                "agent": "change_analyst",
+                "function": f"{self.__class__.__name__}.analyze_parsed_notice",
+            },
+        )
+        logger.info(
+            "Change analyst step start: ChangeAnalystService.analyze_parsed_notice (mode=%s)",
+            analysis_mode,
+            extra={
+                "agent": "change_analyst",
+                "function": f"{self.__class__.__name__}.analyze_parsed_notice",
+                "analysis_mode": analysis_mode,
+                "law_name": parsed_notice.law_name,
+                "change_types": parsed_notice.change_types,
+                "candidate_count": len(parsed_notice.article_candidates),
+            },
+        )
         tool_registry = self._build_tool_registry()
-        parsed_notice = tool_registry.execute("parse_notice_structure", payload=payload)
 
         try:
             collection = self.article_match_tool.get_collection()
@@ -40,15 +73,80 @@ class ChangeAnalystService:
             raise HTTPException(status_code=409, detail="Vector index is empty. Run /admin/reindex first.")
 
         article_diffs = []
-        for candidate in parsed_notice.article_candidates:
-            matched_article, match_score = tool_registry.execute(
-                "lawdb_get_article",
-                law_name=parsed_notice.law_name,
-                candidate=candidate,
+        llm_candidates: list[dict] = []
+        for index, candidate in enumerate(parsed_notice.article_candidates, start=1):
+            logger.info(
+                "Change analyst candidate step: ChangeAnalystService.analyze_parsed_notice[%s/%s]",
+                index,
+                len(parsed_notice.article_candidates),
+                extra={
+                    "agent": "change_analyst",
+                    "function": f"{self.__class__.__name__}.analyze_parsed_notice",
+                    "candidate_index": index,
+                    "candidate_total": len(parsed_notice.article_candidates),
+                    "article_no": candidate.article_no,
+                },
             )
-            match_method = "exact_article_no"
-            if matched_article is None:
-                if parsed_notice.change_type == "제정" and candidate.article_no:
+            candidate_mode = candidate.analysis_mode or ("STRUCTURE" if parsed_notice.analysis_mode == "STRUCTURE" else "DIFF")
+            candidate_change_type = candidate.change_type or "미상"
+
+            if candidate_mode == "STRUCTURE":
+                summary_input = self._summarize_match_input(
+                    {
+                        "law_name": parsed_notice.law_name,
+                        "candidate": candidate,
+                    }
+                )
+                tool_registry.record_skip("lawdb_get_article", input_summary=summary_input, output_summary="skipped in STRUCTURE mode")
+                tool_registry.record_skip("vector_search_law", input_summary=summary_input, output_summary="skipped in STRUCTURE mode")
+                tool_registry.record_skip(
+                    "validate_target_locator",
+                    input_summary=f"article_no={candidate.article_no or '미상'}, locator=없음",
+                    output_summary="skipped in STRUCTURE mode",
+                )
+                tool_registry.record_skip(
+                    "diff_generate_article",
+                    input_summary=f"article_no={candidate.article_no or '미상'}, match_method=unmatched",
+                    output_summary="skipped in STRUCTURE mode",
+                )
+                article_diff = NoticeArticleDiff(
+                    article_no=candidate.article_no,
+                    target_locator=None,
+                    target_exists=None,
+                    fact_status="confirmed",
+                    validation_message=None,
+                    matched_law_name=None,
+                    matched_article_no=None,
+                    matched_article_key=None,
+                    current_text=None,
+                    before_text=None,
+                    after_text=None,
+                    diff_summary=None,
+                    labels=[],
+                    match_score=None,
+                    match_method="unmatched",
+                    analysis_method="rule_based",
+                    diff_segments=[],
+                    highlights=[],
+                    numeric_changes=[],
+                    source_text=candidate.source_text,
+                )
+            else:
+                matched_article, match_score = tool_registry.execute(
+                    "lawdb_get_article",
+                    law_name=parsed_notice.law_name,
+                    candidate=candidate,
+                )
+                match_method = "exact_article_no"
+                if matched_article is None:
+                    matched_article, match_score = tool_registry.execute(
+                        "vector_search_law",
+                        collection=collection,
+                        law_name=parsed_notice.law_name,
+                        candidate=candidate,
+                    )
+                    match_method = "vector_search" if matched_article is not None else "unmatched"
+                else:
                     tool_registry.record_skip(
                         "vector_search_law",
                         input_summary=self._summarize_match_input(
@@ -57,101 +155,126 @@ class ChangeAnalystService:
                                 "candidate": candidate,
                             }
                         ),
-                        output_summary="new article insertion skips fallback matching",
+                        output_summary="exact match already found",
                     )
-                    match_method = "unmatched"
-                else:
-                    matched_article, match_score = tool_registry.execute(
-                        "vector_search_law",
-                        collection=collection,
-                        law_name=parsed_notice.law_name,
-                        candidate=candidate,
-                    )
-                    match_method = "vector_search" if matched_article is not None else "unmatched"
-            else:
-                tool_registry.record_skip(
-                    "vector_search_law",
-                    input_summary=self._summarize_match_input(
-                        {
-                            "law_name": parsed_notice.law_name,
-                            "candidate": candidate,
-                        }
-                    ),
-                    output_summary="exact match already found",
+
+                target_locator, target_exists, validation_message = tool_registry.execute(
+                    "validate_target_locator",
+                    candidate=candidate,
+                    matched_article=matched_article,
                 )
 
-            target_locator, target_exists, validation_message = tool_registry.execute(
-                "validate_target_locator",
-                candidate=candidate,
-                matched_article=matched_article,
+                article_diff = tool_registry.execute(
+                    "diff_generate_article",
+                    candidate=candidate,
+                    matched_article=matched_article,
+                    match_score=match_score,
+                    match_method=match_method,
+                    change_type=candidate_change_type,
+                    target_locator=target_locator,
+                    target_exists=target_exists,
+                    validation_message=validation_message,
+                )
+            article_diffs.append(article_diff)
+            llm_candidates.append(
+                {
+                    "article_no": candidate.article_no,
+                    "article_ref_text": candidate.article_ref_text,
+                    "change_type": candidate_change_type,
+                    "analysis_mode": candidate_mode,
+                    "source_text": candidate.source_text,
+                }
             )
-
-            article_diff = tool_registry.execute(
-                "diff_generate_article",
-                candidate=candidate,
-                matched_article=matched_article,
-                match_score=match_score,
-                match_method=match_method,
-                change_type=parsed_notice.change_type,
-                target_locator=target_locator,
-                target_exists=target_exists,
-                validation_message=validation_message,
-            )
-
             if article_diff.fact_status == "invalid_target":
                 tool_registry.record_skip(
                     "classify_change_labels",
-                    input_summary=self._summarize_llm_input(
+                    input_summary=self._summarize_batch_llm_input(
                         {
-                            "current_text": article_diff.current_text,
-                            "source_text": article_diff.source_text,
+                            "candidate_count": 1,
+                            "eligible_count": 0,
+                            "analysis_mode": candidate_mode,
+                            "source_doc_type": parsed_notice.doc_type,
                         }
                     ),
                     output_summary="invalid target locator",
                 )
-            elif self.llm_change_tool and (
-                article_diff.current_text or parsed_notice.change_type == "제정"
-            ):
-                try:
-                    article_diff = tool_registry.execute(
-                        "classify_change_labels",
-                        current_text=article_diff.current_text or "",
-                        source_text=article_diff.source_text,
-                        base_diff=article_diff,
-                    )
-                except Exception:
-                    # Keep the confirmed fact result even if LLM enrichment times out or fails.
-                    pass
-            else:
-                tool_registry.record_skip(
+
+        llm_eligible = [
+            idx
+            for idx, item in enumerate(article_diffs)
+            if item.fact_status != "invalid_target" and (item.current_text or llm_candidates[idx]["analysis_mode"] == "STRUCTURE")
+        ]
+        if self.llm_change_tool and llm_eligible:
+            try:
+                article_diffs = tool_registry.execute(
                     "classify_change_labels",
-                    input_summary=self._summarize_llm_input(
-                        {
-                            "current_text": article_diff.current_text,
-                            "source_text": article_diff.source_text,
-                        }
-                    ),
-                    output_summary="llm tool not configured or insufficient context",
+                    source_doc_type=parsed_notice.doc_type,
+                    candidates=llm_candidates,
+                    base_diffs=article_diffs,
                 )
+            except Exception as exc:
+                logger.warning(
+                "LLM classify_change_labels_batch failed; fallback to rule-based result: %s",
+                    " ".join(str(exc).split()).strip() or exc.__class__.__name__,
+                    extra={
+                        "agent": "change_analyst",
+                        "function": f"{self.__class__.__name__}.analyze_parsed_notice",
+                        "analysis_mode": analysis_mode,
+                    },
+                )
+        else:
+            skip_reason = "llm tool not configured" if self.llm_change_tool is None else "insufficient context for llm classify"
+            tool_registry.record_skip(
+                "classify_change_labels",
+                input_summary=self._summarize_batch_llm_input(
+                    {
+                        "candidate_count": len(article_diffs),
+                        "eligible_count": len(llm_eligible),
+                        "analysis_mode": analysis_mode,
+                        "source_doc_type": parsed_notice.doc_type,
+                    }
+                ),
+                output_summary=skip_reason,
+            )
 
-            article_diffs.append(article_diff)
-
-        return NoticeDiffResponse(
+        logger.info(
+            "Change analyst step complete: ChangeAnalystService.analyze_parsed_notice",
+            extra={
+                "agent": "change_analyst",
+                "function": f"{self.__class__.__name__}.analyze_parsed_notice",
+                "analysis_mode": analysis_mode,
+                "article_diff_count": len(article_diffs),
+                "audit_count": len(tool_registry.audit),
+            },
+        )
+        response = NoticeDiffResponse(
+            agent="change_analyst",
+            analysis_mode=analysis_mode,
             parsed_notice=parsed_notice,
             article_diffs=article_diffs,
             tool_audit=tool_registry.audit,
         )
+        confirmed_count = sum(1 for item in response.article_diffs if item.fact_status == "confirmed")
+        invalid_count = sum(1 for item in response.article_diffs if item.fact_status == "invalid_target")
+        unmatched_count = sum(1 for item in response.article_diffs if item.fact_status == "unmatched")
+        llm_count = sum(1 for item in response.article_diffs if item.analysis_method == "llm")
+        logger.info(
+            "Change analyst output: article_diffs=%s, confirmed=%s, invalid=%s, unmatched=%s, llm_applied=%s, tool_audit=%s",
+            len(response.article_diffs),
+            confirmed_count,
+            invalid_count,
+            unmatched_count,
+            llm_count,
+            len(response.tool_audit),
+            extra={
+                "agent": "change_analyst",
+                "function": f"{self.__class__.__name__}.analyze_parsed_notice",
+            },
+        )
+        return response
 
     def _build_tool_registry(self) -> ToolRegistry:
         registry = ToolRegistry()
-        registry.register(
-            ToolSpec(
-                name="parse_notice_structure",
-                handler=self.parser.parse,
-                summarize_input=lambda kwargs: self._summarize_parse_input(kwargs["payload"]),
-                summarize_output=lambda result: f"law_name={result.law_name or '미상'}, candidates={len(result.article_candidates)}",
-            )
-        )
         registry.register(
             ToolSpec(
                 name="lawdb_get_article",
@@ -188,15 +311,12 @@ class ChangeAnalystService:
             registry.register(
                 ToolSpec(
                     name="classify_change_labels",
-                    handler=self.llm_change_tool.analyze,
-                    summarize_input=self._summarize_llm_input,
-                    summarize_output=lambda result: f"labels={len(result.labels)}, highlights={len(result.highlights)}",
+                    handler=self.llm_change_tool.analyze_batch,
+                    summarize_input=self._summarize_batch_llm_input,
+                    summarize_output=lambda result: f"batch_results={len(result)}",
                 )
             )
         return registry
-
-    def _summarize_parse_input(self, payload: NoticeSearchRequest) -> str:
-        return f"input_type={payload.input_type}, title={payload.title or '미상'}"
 
     def _summarize_match_input(self, kwargs: dict) -> str:
         candidate = kwargs["candidate"]
@@ -209,10 +329,19 @@ class ChangeAnalystService:
             return f"method={method}, matched=no"
         return f"method={method}, matched=yes, article_key={article.article_key}, score={score}"
 
-    def _summarize_llm_input(self, kwargs: dict) -> str:
-        current_text = kwargs.get("current_text")
-        source_text = kwargs.get("source_text")
-        return f"current_text={'yes' if current_text else 'no'}, source_text={'yes' if source_text else 'no'}"
+    def _summarize_batch_llm_input(self, kwargs: dict) -> str:
+        candidates = kwargs.get("candidates")
+        base_diffs = kwargs.get("base_diffs")
+        candidate_count = kwargs.get("candidate_count", len(candidates) if isinstance(candidates, list) else 0)
+        eligible_count = kwargs.get("eligible_count", len(base_diffs) if isinstance(base_diffs, list) else 0)
+        analysis_mode = kwargs.get("analysis_mode") or "mixed"
+        source_doc_type = kwargs.get("source_doc_type") or "unknown"
+        return (
+            f"candidate_count={candidate_count}, "
+            f"eligible_count={eligible_count}, "
+            f"analysis_mode={analysis_mode}, "
+            f"source_doc_type={source_doc_type}"
+        )
 
     def _summarize_validation_output(self, result) -> str:
         target_locator, target_exists, validation_message = result

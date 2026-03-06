@@ -26,108 +26,108 @@
       },
       "basis_excerpt": "사업주는 안전보건교육 실시 결과를 기록하여 3년간 보존하여야 한다.",
       "result": {
-  "agent": "change_analyst",
-  "parsed_notice": {
-    "doc_type": "json",
-    "title": "산업안전보건법 일부개정안",
-    "law_name": "산업안전보건법",
-    "change_type": "제정",
-    "normalized_text": "제29조의2를 다음과 같이 신설한다. 제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다.",
-    "article_candidates": [
-      {
-        "article_no": "제29조의2",
-        "article_ref_text": "제29조의2",
-        "source_text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
-      }
-    ]
-  },
-  "article_diffs": [
-    {
-      "article_no": "제29조의2",
-      "target_locator": null,
-      "target_exists": null,
-      "fact_status": "confirmed",
-      "validation_message": null,
-      "matched_law_name": null,
-      "matched_article_no": null,
-      "matched_article_key": null,
-      "current_text": null,
-      "before_text": null,
-      "after_text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다.",
-      "diff_summary": "제29조의2 신설: 사업주가 안전보건교육 실시 시 교육 일시·참석자·교육 내용을 기록하여 3년간 보존하도록 규정 추가",
-      "labels": [
-        "조문신설"
-      ],
-      "match_score": null,
-      "match_method": "unmatched",
-      "analysis_method": "llm",
-      "diff_segments": [
-        {
-          "op": "insert",
-          "text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
-        }
-      ],
-      "highlights": [
-        {
-          "type": "insert",
-          "before": null,
-          "after": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
+        "agent": "orchestrator",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 일부개정안",
+          "law_name": "산업안전보건법",
+          "change_type": "제정",
+          "normalized_text": "제29조의2를 다음과 같이 신설한다. 제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다.",
+          "article_candidates": [
+            {
+              "article_no": "제29조의2",
+              "article_ref_text": "제29조의2",
+              "source_text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
+            }
+          ]
         },
-        {
-          "type": "insert",
-          "before": null,
-          "after": "3년간 보존"
-        }
-      ],
-      "numeric_changes": [
-        {
-          "field": "보존기간",
-          "before": "",
-          "after": "3년간"
-        }
-      ],
-      "source_text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
-    }
-  ],
-  "tool_audit": [
-    {
-      "tool_name": "parse_notice_structure",
-      "status": "success",
-      "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
-      "output_summary": "law_name=산업안전보건법, candidates=1"
-    },
-    {
-      "tool_name": "lawdb_get_article",
-      "status": "success",
-      "input_summary": "law_name=산업안전보건법, article_no=제29조의2",
-      "output_summary": "method=exact, matched=no"
-    },
-    {
-      "tool_name": "vector_search_law",
-      "status": "skipped",
-      "input_summary": "law_name=산업안전보건법, article_no=제29조의2",
-      "output_summary": "new article insertion skips fallback matching"
-    },
-    {
-      "tool_name": "validate_target_locator",
-      "status": "success",
-      "input_summary": "article_no=제29조의2, locator=없음",
-      "output_summary": "locator=없음, target_exists=unknown"
-    },
-    {
-      "tool_name": "diff_generate_article",
-      "status": "success",
-      "input_summary": "article_no=제29조의2, match_method=unmatched",
-      "output_summary": "fact_status=confirmed, before=no, after=yes"
-    },
-    {
-      "tool_name": "classify_change_labels",
-      "status": "success",
-      "input_summary": "current_text=no, source_text=yes",
-      "output_summary": "labels=1, highlights=2"
-    }
-  ]
-}
+        "article_diffs": [
+          {
+            "article_no": "제29조의2",
+            "target_locator": null,
+            "target_exists": null,
+            "fact_status": "confirmed",
+            "validation_message": null,
+            "matched_law_name": null,
+            "matched_article_no": null,
+            "matched_article_key": null,
+            "current_text": null,
+            "before_text": null,
+            "after_text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다.",
+            "diff_summary": "제29조의2 신설: 사업주가 안전보건교육 실시 시 교육 일시·참석자·교육 내용을 기록하여 3년간 보존하도록 규정 추가",
+            "labels": [
+              "조문신설"
+            ],
+            "match_score": null,
+            "match_method": "unmatched",
+            "analysis_method": "llm",
+            "diff_segments": [
+              {
+                "op": "insert",
+                "text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
+              }
+            ],
+            "highlights": [
+              {
+                "type": "insert",
+                "before": null,
+                "after": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
+              },
+              {
+                "type": "insert",
+                "before": null,
+                "after": "3년간 보존"
+              }
+            ],
+            "numeric_changes": [
+              {
+                "field": "보존기간",
+                "before": "",
+                "after": "3년간"
+              }
+            ],
+            "source_text": "제29조의2(안전보건교육 결과의 기록 및 보존) 사업주는 제29조에 따른 안전보건교육을 실시한 경우 교육 일시, 참석자 및 교육 내용을 기록하여 3년간 보존하여야 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
+            "output_summary": "law_name=산업안전보건법, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법, article_no=제29조의2",
+            "output_summary": "method=exact, matched=no"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "skipped",
+            "input_summary": "law_name=산업안전보건법, article_no=제29조의2",
+            "output_summary": "new article insertion skips fallback matching"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=제29조의2, locator=없음",
+            "output_summary": "locator=없음, target_exists=unknown"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=제29조의2, match_method=unmatched",
+            "output_summary": "fact_status=confirmed, before=no, after=yes"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "success",
+            "input_summary": "current_text=no, source_text=yes",
+            "output_summary": "labels=1, highlights=2"
+          }
+        ]
+      }
     },
     {
       "case_id": "law_article_54_2_new_followup_record",
@@ -153,103 +153,103 @@
       },
       "basis_excerpt": "사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다.",
       "result": {
-  "agent": "change_analyst",
-  "parsed_notice": {
-    "doc_type": "json",
-    "title": "산업안전보건법 일부개정안",
-    "law_name": "산업안전보건법",
-    "change_type": "제정",
-    "normalized_text": "제54조의2를 다음과 같이 신설한다. 제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다.",
-    "article_candidates": [
-      {
-        "article_no": "제54조의2",
-        "article_ref_text": "제54조의2",
-        "source_text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+        "agent": "orchestrator",
+        "parsed_notice": {
+          "doc_type": "json",
+          "title": "산업안전보건법 일부개정안",
+          "law_name": "산업안전보건법",
+          "change_type": "제정",
+          "normalized_text": "제54조의2를 다음과 같이 신설한다. 제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다.",
+          "article_candidates": [
+            {
+              "article_no": "제54조의2",
+              "article_ref_text": "제54조의2",
+              "source_text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+            }
+          ]
+        },
+        "article_diffs": [
+          {
+            "article_no": "제54조의2",
+            "target_locator": null,
+            "target_exists": null,
+            "fact_status": "confirmed",
+            "validation_message": null,
+            "matched_law_name": null,
+            "matched_article_no": null,
+            "matched_article_key": null,
+            "current_text": null,
+            "before_text": null,
+            "after_text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다.",
+            "diff_summary": "제54조의2 신설: 중대재해 후속조치 기록을 5년간 보존하도록 규정",
+            "labels": [
+              "조문신설"
+            ],
+            "match_score": null,
+            "match_method": "unmatched",
+            "analysis_method": "llm",
+            "diff_segments": [
+              {
+                "op": "insert",
+                "text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+              }
+            ],
+            "highlights": [
+              {
+                "type": "insert",
+                "before": null,
+                "after": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+              }
+            ],
+            "numeric_changes": [
+              {
+                "field": "보존기간",
+                "before": "",
+                "after": "5년"
+              }
+            ],
+            "source_text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
+          }
+        ],
+        "tool_audit": [
+          {
+            "tool_name": "parse_notice_structure",
+            "status": "success",
+            "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
+            "output_summary": "law_name=산업안전보건법, candidates=1"
+          },
+          {
+            "tool_name": "lawdb_get_article",
+            "status": "success",
+            "input_summary": "law_name=산업안전보건법, article_no=제54조의2",
+            "output_summary": "method=exact, matched=no"
+          },
+          {
+            "tool_name": "vector_search_law",
+            "status": "skipped",
+            "input_summary": "law_name=산업안전보건법, article_no=제54조의2",
+            "output_summary": "new article insertion skips fallback matching"
+          },
+          {
+            "tool_name": "validate_target_locator",
+            "status": "success",
+            "input_summary": "article_no=제54조의2, locator=없음",
+            "output_summary": "locator=없음, target_exists=unknown"
+          },
+          {
+            "tool_name": "diff_generate_article",
+            "status": "success",
+            "input_summary": "article_no=제54조의2, match_method=unmatched",
+            "output_summary": "fact_status=confirmed, before=no, after=yes"
+          },
+          {
+            "tool_name": "classify_change_labels",
+            "status": "success",
+            "input_summary": "current_text=no, source_text=yes",
+            "output_summary": "labels=1, highlights=1"
+          }
+        ]
       }
-    ]
-  },
-  "article_diffs": [
-    {
-      "article_no": "제54조의2",
-      "target_locator": null,
-      "target_exists": null,
-      "fact_status": "confirmed",
-      "validation_message": null,
-      "matched_law_name": null,
-      "matched_article_no": null,
-      "matched_article_key": null,
-      "current_text": null,
-      "before_text": null,
-      "after_text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다.",
-      "diff_summary": "제54조의2 신설: 중대재해 후속조치 기록을 5년간 보존하도록 규정",
-      "labels": [
-        "조문신설"
-      ],
-      "match_score": null,
-      "match_method": "unmatched",
-      "analysis_method": "llm",
-      "diff_segments": [
-        {
-          "op": "insert",
-          "text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
-        }
-      ],
-      "highlights": [
-        {
-          "type": "insert",
-          "before": null,
-          "after": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
-        }
-      ],
-      "numeric_changes": [
-        {
-          "field": "보존기간",
-          "before": "",
-          "after": "5년"
-        }
-      ],
-      "source_text": "제54조의2(중대재해 후속조치 기록의 보존) 사업주는 제54조에 따른 보고 및 조치 결과를 기록하여 5년간 보존하여야 한다."
-    }
-  ],
-  "tool_audit": [
-    {
-      "tool_name": "parse_notice_structure",
-      "status": "success",
-      "input_summary": "input_type=json, title=산업안전보건법 일부개정안",
-      "output_summary": "law_name=산업안전보건법, candidates=1"
-    },
-    {
-      "tool_name": "lawdb_get_article",
-      "status": "success",
-      "input_summary": "law_name=산업안전보건법, article_no=제54조의2",
-      "output_summary": "method=exact, matched=no"
-    },
-    {
-      "tool_name": "vector_search_law",
-      "status": "skipped",
-      "input_summary": "law_name=산업안전보건법, article_no=제54조의2",
-      "output_summary": "new article insertion skips fallback matching"
-    },
-    {
-      "tool_name": "validate_target_locator",
-      "status": "success",
-      "input_summary": "article_no=제54조의2, locator=없음",
-      "output_summary": "locator=없음, target_exists=unknown"
-    },
-    {
-      "tool_name": "diff_generate_article",
-      "status": "success",
-      "input_summary": "article_no=제54조의2, match_method=unmatched",
-      "output_summary": "fact_status=confirmed, before=no, after=yes"
-    },
-    {
-      "tool_name": "classify_change_labels",
-      "status": "success",
-      "input_summary": "current_text=no, source_text=yes",
-      "output_summary": "labels=1, highlights=1"
-    }
-  ]
-}
     }
   ]
 }

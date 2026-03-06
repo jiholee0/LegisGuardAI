@@ -28,6 +28,24 @@ LAW_XML = """
     <조문번호>제23조의2</조문번호>
     <조문내용>사업주는 기록을 보관하여야 한다.</조문내용>
   </조문>
+  <별표>
+    <별표단위 별표키="000100E">
+      <별표번호>0001</별표번호>
+      <별표가지번호>00</별표가지번호>
+      <별표구분>별표</별표구분>
+      <별표제목>법의 일부를 적용하지 않는 사업 또는 사업장</별표제목>
+      <별표내용><![CDATA[별표 본문 1줄
+별표 본문 2줄]]></별표내용>
+    </별표단위>
+    <별표단위 별표키="000100F">
+      <별표번호>0001</별표번호>
+      <별표가지번호>00</별표가지번호>
+      <별표구분>서식</별표구분>
+      <별표제목>통합 산업재해 현황 조사표</별표제목>
+      <별표내용><![CDATA[별지 본문 1줄
+별지 본문 2줄]]></별표내용>
+    </별표단위>
+  </별표>
 </root>
 """
 
@@ -71,7 +89,7 @@ def test_ingest_upserts_laws_and_articles(tmp_path: Path):
 
     assert result.status == "SUCCESS"
     assert result.laws_upserted == 1
-    assert result.articles_upserted == 2
+    assert result.articles_upserted == 4
 
 
 def test_ingest_is_idempotent_for_article_key(tmp_path: Path):
@@ -83,10 +101,23 @@ def test_ingest_is_idempotent_for_article_key(tmp_path: Path):
 
     with session_factory() as session:
         assert session.query(Law).count() == 1
-        assert session.query(Article).count() == 2
+        assert session.query(Article).count() == 4
 
 
 def test_parser_supports_article_numbers_with_suffix():
     parsed = LawXmlParser().parse_law(ET.fromstring(LAW_XML), "산업안전보건법", "LAW001", "LAW")
     article_nos = [article["article_no"] for article in parsed.articles]
     assert "제23조의2" in article_nos
+
+
+def test_parser_includes_appendix_as_article():
+    parsed = LawXmlParser().parse_law(ET.fromstring(LAW_XML), "산업안전보건법", "LAW001", "LAW")
+
+    appendix = next(article for article in parsed.articles if article["article_no"] == "별표 1")
+    assert appendix["article_title"] == "법의 일부를 적용하지 않는 사업 또는 사업장"
+    assert "별표 본문 1줄\n별표 본문 2줄" in appendix["article_text"]
+
+    form = next(article for article in parsed.articles if article["article_no"] == "별지 1")
+    assert form["article_title"] == "통합 산업재해 현황 조사표"
+    assert "별지 본문 1줄\n별지 본문 2줄" in form["article_text"]
+    assert appendix["article_key"] != form["article_key"]

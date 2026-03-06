@@ -12,10 +12,41 @@ class LlmClient(Protocol):
     def generate_json(self, *, system_prompt: str, user_prompt: str) -> dict:
         ...
 
+    def generate_json_with_images(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        image_data_urls: list[str],
+    ) -> dict:
+        ...
+
 
 class DisabledLlmClient:
     def generate_json(self, *, system_prompt: str, user_prompt: str) -> dict:
         raise RuntimeError("LLM provider is disabled.")
+
+    def generate_json_with_images(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        image_data_urls: list[str],
+    ) -> dict:
+        raise RuntimeError("LLM provider is disabled.")
+
+
+def _parse_json_content_from_chat_payload(payload: dict) -> dict:
+    content = payload["choices"][0]["message"]["content"]
+    if isinstance(content, str):
+        return json.loads(content)
+    if isinstance(content, list):
+        for part in content:
+            if isinstance(part, dict):
+                text = part.get("text")
+                if isinstance(text, str) and text.strip():
+                    return json.loads(text)
+    raise RuntimeError("LLM response content is not a JSON string.")
 
 
 def _raise_with_response_details(response: httpx.Response, context: str) -> None:
@@ -68,11 +99,41 @@ class OpenAICompatibleLlmClient:
             timeout=httpx.Timeout(self.timeout_seconds, connect=min(self.timeout_seconds, 10.0)),
         )
         _raise_with_response_details(response, "OpenAI-compatible chat completion")
-        payload = response.json()
-        content = payload["choices"][0]["message"]["content"]
-        if not isinstance(content, str):
-            raise RuntimeError("LLM response content is not a JSON string.")
-        return json.loads(content)
+        return _parse_json_content_from_chat_payload(response.json())
+
+    def generate_json_with_images(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        image_data_urls: list[str],
+    ) -> dict:
+        content = [{"type": "text", "text": user_prompt}]
+        content.extend(
+            {"type": "image_url", "image_url": {"url": data_url}}
+            for data_url in image_data_urls
+        )
+        response = _post_json(
+            url=f"{self.base_url}/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            json_body={
+                "model": self.model,
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": content,
+                    },
+                ],
+            },
+            timeout=httpx.Timeout(self.timeout_seconds, connect=min(self.timeout_seconds, 10.0)),
+        )
+        _raise_with_response_details(response, "OpenAI-compatible chat completion (multimodal images)")
+        return _parse_json_content_from_chat_payload(response.json())
 
 
 class AzureOpenAILlmClient:
@@ -108,11 +169,41 @@ class AzureOpenAILlmClient:
             timeout=httpx.Timeout(self.timeout_seconds, connect=min(self.timeout_seconds, 10.0)),
         )
         _raise_with_response_details(response, "Azure OpenAI chat completion")
-        payload = response.json()
-        content = payload["choices"][0]["message"]["content"]
-        if not isinstance(content, str):
-            raise RuntimeError("LLM response content is not a JSON string.")
-        return json.loads(content)
+        return _parse_json_content_from_chat_payload(response.json())
+
+    def generate_json_with_images(
+        self,
+        *,
+        system_prompt: str,
+        user_prompt: str,
+        image_data_urls: list[str],
+    ) -> dict:
+        content = [{"type": "text", "text": user_prompt}]
+        content.extend(
+            {"type": "image_url", "image_url": {"url": data_url}}
+            for data_url in image_data_urls
+        )
+        response = _post_json(
+            url=f"{self.base_url}/openai/deployments/{self.deployment}/chat/completions",
+            headers={
+                "api-key": self.api_key,
+                "Content-Type": "application/json",
+            },
+            params={"api-version": self.api_version},
+            json_body={
+                "response_format": {"type": "json_object"},
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {
+                        "role": "user",
+                        "content": content,
+                    },
+                ],
+            },
+            timeout=httpx.Timeout(self.timeout_seconds, connect=min(self.timeout_seconds, 10.0)),
+        )
+        _raise_with_response_details(response, "Azure OpenAI chat completion (multimodal images)")
+        return _parse_json_content_from_chat_payload(response.json())
 
 
 def build_llm_client() -> LlmClient:

@@ -39,3 +39,12 @@ class ArticleRepository:
             .order_by(Article.article_order, Article.id)
         )
         return list(self.session.scalars(stmt))
+
+    def list_by_article_no(self, article_no: str) -> list[Article]:
+        stmt = (
+            select(Article)
+            .options(joinedload(Article.law))
+            .where(Article.article_no == article_no)
+            .order_by(Article.article_order, Article.id)
+        )
+        return list(self.session.scalars(stmt))

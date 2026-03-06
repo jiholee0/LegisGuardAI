@@ -7,6 +7,8 @@ Description-Content-Type: text/markdown
 Requires-Dist: chromadb>=1.0.0
 Requires-Dist: fastapi>=0.115.0
 Requires-Dist: httpx>=0.28.0
+Requires-Dist: pypdf>=5.2.0
+Requires-Dist: python-multipart>=0.0.9
 Requires-Dist: python-dotenv>=1.0.1
 Requires-Dist: sqlalchemy>=2.0.36
 Requires-Dist: uvicorn>=0.34.0

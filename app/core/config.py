@@ -73,7 +73,7 @@ def get_settings() -> Settings:
         llm_model=os.getenv("LLM_MODEL", "gpt-4.1-mini"),
         llm_deployment=os.getenv("LLM_DEPLOYMENT"),
         llm_api_version=os.getenv("LLM_API_VERSION", "2024-10-21"),
-        llm_timeout_seconds=float(os.getenv("LLM_TIMEOUT_SECONDS", "30")),
+        llm_timeout_seconds=float(os.getenv("LLM_TIMEOUT_SECONDS", "60")),
     )
     settings.ensure_data_dirs()
     return settings

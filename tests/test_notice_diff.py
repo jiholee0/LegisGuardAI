@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
@@ -11,9 +13,49 @@ from app.core.config import get_settings
 from app.db.models import Article, Base, Law
 from app.schemas.search import NoticeBodyJson, NoticeSearchRequest
 from app.services.agents.change_analyst import ChangeAnalystService
+from app.services.agents.orchestrator import NoticeOrchestratorService
 from app.services.agents.tools.llm_change_analysis import LlmChangeAnalysisTool
-from app.services.agents.tools.notice_parser import NoticeParserService
+from app.services.agents.tools.llm_notice_parser import LlmNoticeParserTool
+from app.services.agents.tools.pdf_image_converter import PdfImageConverterTool
 from app.services.law.embedding_index import EmbeddingIndexService
+
+
+class FakeNoticeParserLlmClient:
+    def generate_json(self, *, system_prompt: str, user_prompt: str) -> dict:
+        payload = json.loads(user_prompt)
+        content = str(payload.get("content") or "")
+        is_new = "신설" in content
+        article_match = re.search(r"(제\s*\d+\s*조(?:의\s*\d+)?)", content)
+        article_no = None
+        if article_match:
+            article_no = re.sub(r"\s+", "", article_match.group(1))
+        law_name = str(payload.get("law_name_hint") or "")
+        if not law_name:
+            title = str(payload.get("title") or "")
+            if "시행령" in title:
+                law_name = "산업안전보건법 시행령"
+            elif "시행규칙" in title:
+                law_name = "산업안전보건법 시행규칙"
+            else:
+                law_name = "산업안전보건법"
+        return {
+            "law_name": law_name,
+            "change_types": ["제정"] if is_new else ["일부개정"],
+            "analysis_mode": "STRUCTURE" if is_new else "DIFF",
+            "article_candidates": [
+                {
+                    "article_no": article_no,
+                    "article_ref_text": article_no,
+                    "change_type": "제정" if is_new else "일부개정",
+                    "analysis_mode": "STRUCTURE" if is_new else "DIFF",
+                    "source_text": content,
+                }
+            ],
+        }
+
+
+def build_test_parser() -> LlmNoticeParserTool:
+    return LlmNoticeParserTool(llm_client=FakeNoticeParserLlmClient())
 
 
 def build_session_factory(tmp_path: Path):
@@ -61,10 +103,10 @@ def seed_articles(session_factory):
 
 
 def test_notice_parser_extracts_change_metadata():
-    parser = NoticeParserService()
+    parser = build_test_parser()
 
     parsed = parser.parse(
-        NoticeSearchRequest(
+        payload=NoticeSearchRequest(
             input_type="json",
             title="산업안전보건법 일부개정안",
             body_json=NoticeBodyJson(
@@ -75,16 +117,16 @@ def test_notice_parser_extracts_change_metadata():
     )
 
     assert parsed.law_name == "산업안전보건법"
-    assert parsed.change_type == "일부개정"
+    assert parsed.change_types == ["일부개정"]
     assert parsed.article_candidates[0].article_no == "제23조"
     assert parsed.article_candidates[0].source_text == '제23조 중 "매년 1회 이상"을 "6개월마다 1회 이상"으로 한다.'
 
 
 def test_notice_parser_extracts_single_candidate_for_new_article():
-    parser = NoticeParserService()
+    parser = build_test_parser()
 
     parsed = parser.parse(
-        NoticeSearchRequest(
+        payload=NoticeSearchRequest(
             input_type="json",
             title="산업안전보건법 일부개정안",
             body_json=NoticeBodyJson(
@@ -98,10 +140,25 @@ def test_notice_parser_extracts_single_candidate_for_new_article():
         )
     )
 
-    assert parsed.change_type == "제정"
+    assert parsed.change_types == ["제정"]
     assert len(parsed.article_candidates) == 1
     assert parsed.article_candidates[0].article_no == "제29조의2"
-    assert parsed.article_candidates[0].source_text.startswith("제29조의2(안전보건교육 결과의 기록 및 보존)")
+    assert "제29조의2(안전보건교육 결과의 기록 및 보존)" in parsed.article_candidates[0].source_text
+
+
+def test_notice_parser_can_decide_mode_with_llm():
+    parser = build_test_parser()
+    parsed = parser.parse(
+        payload=NoticeSearchRequest(
+            input_type="text",
+            title="산업안전보건법 일부개정안",
+            body="제29조의2를 다음과 같이 신설한다.",
+        )
+    )
+
+    assert parsed.analysis_mode == "STRUCTURE"
+    assert parsed.change_types == ["제정"]
+    assert parsed.article_candidates[0].article_no == "제29조의2"
 
 
 def test_notice_diff_returns_exact_match_and_numeric_change(tmp_path: Path):
@@ -112,7 +169,10 @@ def test_notice_diff_returns_exact_match_and_numeric_change(tmp_path: Path):
     settings.chroma_collection_name = "notice_diff_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(session_factory=session_factory)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+    )
 
     response = service.analyze_notice(
         NoticeSearchRequest(
@@ -122,10 +182,10 @@ def test_notice_diff_returns_exact_match_and_numeric_change(tmp_path: Path):
         )
     )
 
-    assert response.parsed_notice.change_type == "일부개정"
+    assert response.agent == "orchestrator"
+    assert response.parsed_notice.change_types == ["일부개정"]
     assert len(response.article_diffs) == 1
-    assert response.tool_audit[0].tool_name == "parse_notice_structure"
-    assert response.tool_audit[0].status == "success"
+    assert any(item.tool_name == "parse_notice_structure" and item.status == "success" for item in response.tool_audit)
 
     article_diff = response.article_diffs[0]
     assert article_diff.match_method == "exact_article_no"
@@ -139,7 +199,7 @@ def test_notice_diff_returns_exact_match_and_numeric_change(tmp_path: Path):
     assert any(item.tool_name == "lawdb_get_article" and item.status == "success" for item in response.tool_audit)
     assert any(item.tool_name == "vector_search_law" and item.status == "skipped" for item in response.tool_audit)
     assert any(item.tool_name == "diff_generate_article" and item.status == "success" for item in response.tool_audit)
-    assert any(item.tool_name == "classify_change_labels" and item.status == "skipped" for item in response.tool_audit)
+    assert any(item.tool_name == "classify_change_labels" and item.status in {"error", "success"} for item in response.tool_audit)
 
 
 def test_notice_diff_allows_empty_after_text_for_delete_case(tmp_path: Path):
@@ -150,7 +210,10 @@ def test_notice_diff_allows_empty_after_text_for_delete_case(tmp_path: Path):
     settings.chroma_collection_name = "notice_delete_diff_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(session_factory=session_factory)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+    )
 
     response = service.analyze_notice(
         NoticeSearchRequest(
@@ -177,7 +240,10 @@ def test_notice_diff_marks_missing_delete_target_as_invalid(tmp_path: Path):
     settings.chroma_collection_name = "notice_invalid_delete_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(session_factory=session_factory)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+    )
 
     response = service.analyze_notice(
         NoticeSearchRequest(
@@ -210,7 +276,10 @@ def test_notice_diff_marks_missing_amend_target_as_invalid(tmp_path: Path):
     settings.chroma_collection_name = "notice_invalid_amend_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(session_factory=session_factory)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+    )
 
     response = service.analyze_notice(
         NoticeSearchRequest(
@@ -273,7 +342,10 @@ def test_notice_diff_recognizes_existing_item_locator(tmp_path: Path):
         session.commit()
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(session_factory=session_factory)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+    )
 
     response = service.analyze_notice(
         NoticeSearchRequest(
@@ -298,9 +370,12 @@ def test_notice_diff_treats_new_article_as_insert_without_fallback_matching(tmp_
     settings.chroma_collection_name = "notice_new_article_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(
-        session_factory=session_factory,
-        llm_change_tool=LlmChangeAnalysisTool(llm_client=FakeLlmClientForInsert()),
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(
+            session_factory=session_factory,
+            llm_change_tool=LlmChangeAnalysisTool(llm_client=FakeLlmClientForInsert()),
+        )
     )
 
     response = service.analyze_notice(
@@ -330,7 +405,13 @@ def test_notice_diff_treats_new_article_as_insert_without_fallback_matching(tmp_
     assert any(
         item.tool_name == "vector_search_law"
         and item.status == "skipped"
-        and item.output_summary == "new article insertion skips fallback matching"
+        and item.output_summary == "skipped in STRUCTURE mode"
+        for item in response.tool_audit
+    )
+    assert any(
+        item.tool_name == "diff_generate_article"
+        and item.status == "skipped"
+        and item.output_summary == "skipped in STRUCTURE mode"
         for item in response.tool_audit
     )
 
@@ -343,7 +424,10 @@ def test_vector_search_rejects_irrelevant_low_similarity_match(tmp_path: Path):
     settings.chroma_collection_name = "notice_irrelevant_vector_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(session_factory=session_factory)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+    )
 
     response = service.analyze_notice(
         NoticeSearchRequest(
@@ -410,6 +494,46 @@ class TimeoutLlmClient:
         raise RuntimeError("LLM request timed out while calling https://example.test")
 
 
+class CapturingLlmClient:
+    def __init__(self) -> None:
+        self.last_user_prompt = ""
+
+    def generate_json(self, *, system_prompt: str, user_prompt: str) -> dict:
+        self.last_user_prompt = user_prompt
+        return {
+            "before_text": "사업주는 매년 1회 이상 점검하여야 한다.",
+            "after_text": "사업주는 반기마다 점검하여야 한다.",
+            "diff_summary": "점검 주기 문구 조정",
+            "labels": ["문구정정"],
+            "highlights": [],
+            "numeric_changes": [],
+            "diff_segments": [],
+        }
+
+
+class StubPdfImageConverterTool(PdfImageConverterTool):
+    def __init__(self) -> None:
+        super().__init__(max_pages=1)
+        self.called = False
+
+    def convert(self, *, pdf_base64: str) -> list[str]:
+        self.called = True
+        return ["data:image/jpeg;base64,abc123"]
+
+
+class StubParserWithImages:
+    def parse(self, *, payload: NoticeSearchRequest, image_data_urls: list[str] | None = None):
+        assert payload.input_type == "pdf"
+        assert image_data_urls == ["data:image/jpeg;base64,abc123"]
+        return build_test_parser().parse(
+            payload=NoticeSearchRequest(
+                input_type="text",
+                title=payload.title,
+                body="제23조 중 \"매년 1회 이상\"을 \"6개월마다 1회 이상\"으로 한다.",
+            )
+        )
+
+
 def test_notice_diff_can_use_llm_change_tool(tmp_path: Path):
     session_factory = build_session_factory(tmp_path)
     seed_articles(session_factory)
@@ -418,9 +542,12 @@ def test_notice_diff_can_use_llm_change_tool(tmp_path: Path):
     settings.chroma_collection_name = "notice_llm_diff_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(
-        session_factory=session_factory,
-        llm_change_tool=LlmChangeAnalysisTool(llm_client=FakeLlmClient()),
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(
+            session_factory=session_factory,
+            llm_change_tool=LlmChangeAnalysisTool(llm_client=FakeLlmClient()),
+        )
     )
 
     response = service.analyze_notice(
@@ -452,9 +579,12 @@ def test_notice_diff_falls_back_to_rule_based_when_llm_fails(tmp_path: Path):
     settings.chroma_collection_name = "notice_llm_timeout_articles"
 
     EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
-    service = ChangeAnalystService(
-        session_factory=session_factory,
-        llm_change_tool=LlmChangeAnalysisTool(llm_client=TimeoutLlmClient()),
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(
+            session_factory=session_factory,
+            llm_change_tool=LlmChangeAnalysisTool(llm_client=TimeoutLlmClient()),
+        )
     )
 
     response = service.analyze_notice(
@@ -474,3 +604,64 @@ def test_notice_diff_falls_back_to_rule_based_when_llm_fails(tmp_path: Path):
         and item.output_summary == "RuntimeError: LLM request timed out while calling https://example.test"
         for item in response.tool_audit
     )
+
+
+def test_notice_diff_llm_prompt_excludes_raw_pdf_base64_for_pdf_input(tmp_path: Path):
+    session_factory = build_session_factory(tmp_path)
+    seed_articles(session_factory)
+    settings = get_settings()
+    settings.chroma_persist_dir = str(tmp_path / "chroma_llm_pdf_raw")
+    settings.chroma_collection_name = "notice_llm_pdf_raw_articles"
+
+    capturing_client = CapturingLlmClient()
+    EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
+    service = NoticeOrchestratorService(
+        parser=build_test_parser(),
+        change_analyst_service=ChangeAnalystService(
+            session_factory=session_factory,
+            llm_change_tool=LlmChangeAnalysisTool(llm_client=capturing_client),
+        )
+    )
+
+    raw_pdf_base64 = "JVBERi0xLjQgc2FtcGxl"
+    response = service.analyze_notice(
+        NoticeSearchRequest(
+            input_type="pdf",
+            title="산업안전보건법 일부개정안",
+            body='제23조 중 "매년 1회 이상 점검하여야 한다."을 "반기마다 점검하여야 한다."으로 한다.',
+            raw_pdf_base64=raw_pdf_base64,
+        )
+    )
+
+    prompt_json = json.loads(capturing_client.last_user_prompt)
+    assert response.article_diffs[0].analysis_method == "llm"
+    assert prompt_json["source_doc_type"] == "pdf"
+    assert "raw_pdf_base64" not in prompt_json
+
+
+def test_orchestrator_executes_pdf_image_converter_tool_for_pdf_input(tmp_path: Path):
+    session_factory = build_session_factory(tmp_path)
+    seed_articles(session_factory)
+    settings = get_settings()
+    settings.chroma_persist_dir = str(tmp_path / "chroma_pdf_tool")
+    settings.chroma_collection_name = "notice_pdf_tool_articles"
+
+    converter = StubPdfImageConverterTool()
+    EmbeddingIndexService(session_factory=session_factory).reindex(recreate=True)
+    service = NoticeOrchestratorService(
+        parser=StubParserWithImages(),
+        change_analyst_service=ChangeAnalystService(session_factory=session_factory),
+        pdf_image_converter=converter,
+    )
+
+    response = service.analyze_notice(
+        NoticeSearchRequest(
+            input_type="pdf",
+            title="산업안전보건법 일부개정안",
+            body="추출 텍스트",
+            raw_pdf_base64="JVBERi0xLjQKJQ==",
+        )
+    )
+
+    assert converter.called is True
+    assert any(item.tool_name == "pdf_image_converter" and item.status == "success" for item in response.tool_audit)

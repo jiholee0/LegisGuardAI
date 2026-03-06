@@ -16,7 +16,7 @@ def get_embedding_index_service() -> EmbeddingIndexService:
     return EmbeddingIndexService()
 
 
-@router.post("/ingest/laws", response_model=IngestLawsResponse)
+@router.post("/ingest/laws", response_model=IngestLawsResponse, description="법령 데이터베이스 수집 및 구축")
 def ingest_laws(
     payload: IngestLawsRequest | None = Body(default=None),
     service: LawIngestService = Depends(get_law_ingest_service),
@@ -26,7 +26,7 @@ def ingest_laws(
     return service.ingest(targets)
 
 
-@router.post("/reindex", response_model=ReindexResponse)
+@router.post("/reindex", response_model=ReindexResponse, description="임베딩 인덱스 재구축 (전체 또는 선택적)")
 def reindex(
     payload: ReindexRequest,
     service: EmbeddingIndexService = Depends(get_embedding_index_service),

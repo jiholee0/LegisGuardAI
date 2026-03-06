@@ -139,6 +139,7 @@ class LawIngestService:
                             },
                         )
                     except Exception:
+                        session.rollback()
                         failed_targets.append(target)
                         logger.exception(
                             "Failed ingest target",
@@ -175,6 +176,7 @@ class LawIngestService:
                     failed_targets=failed_targets,
                 )
             except Exception:
+                session.rollback()
                 run_repo.finish(run, status="FAILED", summary={"failed_targets": failed_targets})
                 session.commit()
                 logger.exception(

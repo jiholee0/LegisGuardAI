@@ -6,36 +6,36 @@
   <title>LegisGuard AI — 법규 영향 분석 시스템</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/npm/pretendard/dist/web/static/pretendard.css" />
   <style>
     /* ═══════════════════════════════════════
        CSS Variables
     ═══════════════════════════════════════ */
     :root {
-      --bg:         #0a0c10;
-      --surface:    #111318;
-      --surface2:   #181c24;
-      --border:     #1e2330;
-      --accent:     #c9a84c;
-      --accent-dim: rgba(201,168,76,0.12);
-      --red:        #e05252;
-      --red-dim:    rgba(224,82,82,0.12);
-      --green:      #52c98a;
-      --green-dim:  rgba(82,201,138,0.12);
-      --blue:       #5291e0;
-      --blue-dim:   rgba(82,145,224,0.12);
-      --text:       #d8dce8;
-      --muted:      #4a5268;
-      --font-serif: 'Noto Serif KR', serif;
-      --font-sans:  'Noto Sans KR', sans-serif;
-      --font-mono:  'DM Mono', monospace;
+      --bg:         #f6f8fc;
+      --surface:    #ffffff;
+      --surface2:   #edf2fb;
+      --border:     #d6dfec;
+      --accent:     #2563eb;
+      --accent-dim: rgba(37,99,235,0.12);
+      --red:        #dc3f3f;
+      --red-dim:    rgba(220,63,63,0.11);
+      --green:      #1f9d61;
+      --green-dim:  rgba(31,157,97,0.11);
+      --blue:       #1d4ed8;
+      --blue-dim:   rgba(29,78,216,0.11);
+      --text:       #182235;
+      --muted:      #65748b;
+      --font-serif: 'Pretendard', sans-serif;
+      --font-sans:  'Pretendard', sans-serif;
+      --font-mono:  'Pretendard', sans-serif;
     }
 
     /* ═══════════════════════════════════════
        Reset & Base
     ═══════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 14px; }
+    html { font-size: 17px; }
     body {
       background: var(--bg);
       color: var(--text);
@@ -254,7 +254,7 @@
     }
     .topbar-btn {
       background: var(--accent);
-      color: #0a0c10;
+      color: #ffffff;
       font-family: var(--font-sans);
       font-size: 12px;
       font-weight: 600;
@@ -499,7 +499,7 @@
       transition: background 0.15s;
     }
     .tl-item:last-child { border-bottom: none; }
-    .tl-item:hover { background: rgba(255,255,255,0.01); }
+    .tl-item:hover { background: rgba(26,35,51,0.04); }
     .tl-dot {
       width: 8px; height: 8px;
       border-radius: 50%;
@@ -597,7 +597,7 @@
 
     .btn-primary {
       background: var(--accent);
-      color: #0a0c10;
+      color: #ffffff;
       font-family: var(--font-sans);
       font-size: 13px;
       font-weight: 600;

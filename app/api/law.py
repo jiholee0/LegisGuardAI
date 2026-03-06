@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.orm import Session
 
 from app.db.models import Article, Law
@@ -11,8 +11,17 @@ from app.schemas.admin import LawArticleItem, LawArticleListResponse, LawDbLawIt
 router = APIRouter(prefix="/law", tags=["law"])
 
 
-@router.get("/db", response_model=LawDbSummaryResponse)
+def _is_counted_article() -> object:
+    return and_(
+        ~Article.article_no.like("별표%"),
+        ~Article.article_no.like("별지%"),
+        ~Article.article_no.like("%조의%"),
+    )
+
+
+@router.get("/db", response_model=LawDbSummaryResponse, description="법령 데이터베이스 요약 정보 조회")
 def get_law_db_summary(session: Session = Depends(get_session)) -> LawDbSummaryResponse:
+    counted_article_condition = _is_counted_article()
     rows = session.execute(
         select(
             Law.id,
@@ -21,7 +30,7 @@ def get_law_db_summary(session: Session = Depends(get_session)) -> LawDbSummaryR
             Law.promulgation_no,
             Law.effective_date,
             Law.is_current,
-            func.count(Article.id).label("article_count"),
+            func.coalesce(func.sum(case((counted_article_condition, 1), else_=0)), 0).label("article_count"),
         )
         .outerjoin(Article, Article.law_id == Law.id)
         .group_by(Law.id)
@@ -29,7 +38,9 @@ def get_law_db_summary(session: Session = Depends(get_session)) -> LawDbSummaryR
     ).all()
 
     total_laws = session.scalar(select(func.count(Law.id))) or 0
-    total_articles = session.scalar(select(func.count(Article.id))) or 0
+    total_articles = session.scalar(
+        select(func.count(Article.id)).where(counted_article_condition)
+    ) or 0
 
     return LawDbSummaryResponse(
         total_laws=total_laws,
@@ -49,7 +60,7 @@ def get_law_db_summary(session: Session = Depends(get_session)) -> LawDbSummaryR
     )
 
 
-@router.get("/{law_id}/articles", response_model=LawArticleListResponse)
+@router.get("/{law_id}/articles", response_model=LawArticleListResponse, description="법령의 조문 목록 조회")
 def get_law_articles(law_id: int, session: Session = Depends(get_session)) -> LawArticleListResponse:
     law = session.get(Law, law_id)
     if law is None:
@@ -62,11 +73,16 @@ def get_law_articles(law_id: int, session: Session = Depends(get_session)) -> La
             .order_by(Article.article_order, Article.id)
         )
     )
+    article_count = sum(
+        1
+        for article in articles
+        if not article.article_no.startswith(("별표", "별지")) and "조의" not in article.article_no
+    )
 
     return LawArticleListResponse(
         law_id=law.id,
         law_name=law.law_name,
-        article_count=len(articles),
+        article_count=article_count,
         articles=[
             LawArticleItem(
                 article_no=article.article_no,

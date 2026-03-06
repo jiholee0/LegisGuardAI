@@ -2,6 +2,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+NoticeChangeType = Literal["일부개정", "전부개정", "제정", "폐지", "미상"]
+NoticeAnalysisMode = Literal["DIFF", "STRUCTURE", "MIXED"]
+
 
 class NoticeBodyJson(BaseModel):
     law_name: str | None = None
@@ -9,16 +12,17 @@ class NoticeBodyJson(BaseModel):
 
 
 class NoticeSearchRequest(BaseModel):
-    input_type: Literal["text", "json"]
+    input_type: Literal["text", "json", "pdf"]
     title: str | None = None
     body: str | None = None
     body_json: NoticeBodyJson | None = None
+    raw_pdf_base64: str | None = None
     top_k: int = Field(default=5, ge=1, le=20)
 
     @model_validator(mode="after")
     def validate_payload(self) -> "NoticeSearchRequest":
-        if self.input_type == "text" and not self.body:
-            raise ValueError("body is required when input_type is 'text'")
+        if self.input_type in {"text", "pdf"} and not self.body:
+            raise ValueError("body is required when input_type is 'text' or 'pdf'")
         if self.input_type == "json" and not self.body_json:
             raise ValueError("body_json is required when input_type is 'json'")
         return self
@@ -45,15 +49,17 @@ class NoticeSearchResponse(BaseModel):
 class NoticeArticleCandidate(BaseModel):
     article_no: str | None = None
     article_ref_text: str | None = None
+    change_type: NoticeChangeType | None = None
+    analysis_mode: Literal["DIFF", "STRUCTURE"] | None = None
     source_text: str
 
 
 class NoticeParseResult(BaseModel):
-    doc_type: Literal["text", "json"]
+    doc_type: Literal["text", "json", "pdf"]
+    analysis_mode: NoticeAnalysisMode
     title: str | None = None
     law_name: str | None = None
-    change_type: Literal["일부개정", "전부개정", "제정", "폐지", "미상"]
-    normalized_text: str
+    change_types: list[NoticeChangeType] = Field(default_factory=list)
     article_candidates: list[NoticeArticleCandidate]
 
 
@@ -105,7 +111,8 @@ class ToolAuditItem(BaseModel):
 
 
 class NoticeDiffResponse(BaseModel):
-    agent: Literal["change_analyst"] = "change_analyst"
+    agent: Literal["orchestrator", "change_analyst"] = "orchestrator"
+    analysis_mode: NoticeAnalysisMode
     parsed_notice: NoticeParseResult
     article_diffs: list[NoticeArticleDiff]
     tool_audit: list[ToolAuditItem] = Field(default_factory=list)

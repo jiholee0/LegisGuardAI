@@ -1,13 +1,34 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.admin import router as admin_router
+from app.api.agent_runs import router as agent_runs_router
 from app.api.law import router as law_router
 from app.api.search import router as search_router
 from app.db.session import initialize_database
 
 
 app = FastAPI(title="LegisGuard AI PoC", version="0.1.0")
+
+
+def configure_app_logging() -> None:
+    app_logger = logging.getLogger("app")
+    app_logger.setLevel(logging.INFO)
+    app_logger.propagate = False
+
+    has_stream_handler = any(isinstance(handler, logging.StreamHandler) for handler in app_logger.handlers)
+    if not has_stream_handler:
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+                "%Y-%m-%d %H:%M:%S",
+            )
+        )
+        app_logger.addHandler(handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,9 +49,11 @@ app.add_middleware(
 
 @app.on_event("startup")
 def on_startup() -> None:
+    configure_app_logging()
     initialize_database()
 
 
 app.include_router(admin_router)
 app.include_router(law_router)
 app.include_router(search_router)
+app.include_router(agent_runs_router)
